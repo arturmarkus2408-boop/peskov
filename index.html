@@ -5,16 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#1e1e2f">
   <title>PESKOV — умный помощник</title>
+  <!-- Favicon (data URI, чтобы не было ошибки 404) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
   <link id="pwa-manifest" rel="manifest">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PESKOV">
+
+  <!-- Библиотеки -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <!-- Firebase CDN -->
+  <!-- Firebase (совместимый SDK) -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -102,7 +106,7 @@
     .task-actions button:first-child { background: #2c6e2c; }
     .task-actions button:nth-child(2) { background: #2c6e9e; }
     .task-actions button:last-child { background: #a03a2e; }
-    
+
     /* 👇 Мутные кнопки для неактивных статусов */
     .task-actions button:disabled,
     .task-actions button.muted-btn {
@@ -181,12 +185,11 @@
   <span class="small-link" id="toggleAuthMode">Нет аккаунта? Зарегистрироваться</span>
 </div>
 
-<!-- Основное приложение (скрыто до входа) -->
+<!-- Основное приложение -->
 <div id="appContainer" class="container hidden">
   <div class="header-row">
     <div class="brand">
       <div class="caricature">
-        <!-- SVG иконка -->
         <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF416C"/><stop offset="100%" stop-color="#FF4B2B"/></linearGradient><linearGradient id="grad2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#F9D423"/><stop offset="100%" stop-color="#FF4E50"/></linearGradient></defs>
           <polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="url(#grad)" stroke="#fff" stroke-width="2"/>
@@ -197,7 +200,6 @@
       </div>
       <h1>PESKOV</h1>
     </div>
-
     <div class="right-tools">
       <select id="langSwitcher" class="lang-select">
         <option value="ru">🇷🇺 Рус</option>
@@ -275,7 +277,7 @@
     <div id="tasksContainer" class="task-list"></div>
   </div>
 
-  <!-- КПД — текущий и прошлый месяц -->
+  <!-- КПД -->
   <div class="card">
     <h3 data-i18n="statsTitle">📊 КПД (коэффициент полезного действия)</h3>
     <div class="stats-months">
@@ -306,15 +308,16 @@
 <div id="pwaToast"></div>
 
 <script>
-  // ⚠️ ВСТАВЬТЕ СВОЙ КОНФИГ FIREBASE ЗДЕСЬ ⚠️
+  // ===========================
+  // ⚠️ ВАЖНО: вставьте свой firebaseConfig ниже
+  // ===========================
   const firebaseConfig = {
-    apiKey: "AIzaSyA7ZxPyoOeTW7zheB5o6MaxH0-y5yGDksE",
-    authDomain: "peskov-app.firebaseapp.com",
-    projectId: "peskov-app",
-    storageBucket: "peskov-app.firebasestorage.app",
-    messagingSenderId: "113038228499",
-    appId: "1:113038228499:web:97cf60ebe0f92c6b32d3e6",
-    measurementId: "G-4JJZXQ0ELQ"
+    apiKey: "ВАШ_API_KEY",
+    authDomain: "ВАШ_PROJECT.firebaseapp.com",
+    projectId: "ВАШ_PROJECT_ID",
+    storageBucket: "ВАШ_PROJECT.appspot.com",
+    messagingSenderId: "ВАШ_SENDER_ID",
+    appId: "ВАШ_APP_ID"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -415,7 +418,7 @@
 
   let isLoginMode = true;
 
-  // Аутентификация
+  // ========== Аутентификация ==========
   authForm.addEventListener('submit', e => {
     e.preventDefault();
     const email = authEmail.value.trim();
@@ -460,6 +463,7 @@
     }
   });
 
+  // ========== Firestore подписка ==========
   function subscribeToTasks() {
     if (!currentUser) return;
     if (unsubscribeTasks) unsubscribeTasks();
@@ -479,6 +483,7 @@
     });
   }
 
+  // ========== CRUD ==========
   function addTaskToFirestore(task) {
     if (!currentUser) return;
     return db.collection('tasks').add({
@@ -518,6 +523,7 @@
     await batch.commit();
   }
 
+  // ========== Инициализация UI ==========
   function setupUI() {
     document.getElementById('langSwitcher').addEventListener('change', e => applyLanguage(e.target.value));
     document.getElementById('themeCycleBtn').addEventListener('click', cycleTheme);
@@ -531,6 +537,8 @@
     document.getElementById('inlineWordBtn').addEventListener('click', exportWord);
     document.getElementById('inlineExcelBtn').addEventListener('click', exportExcel);
     document.getElementById('inlinePdfBtn').addEventListener('click', exportPDF);
+
+    // Dropdown
     document.getElementById('dropdownToggleBtn').addEventListener('click', function(e) {
       e.stopPropagation();
       document.getElementById('dropdownMenu').classList.toggle('show');
@@ -577,6 +585,7 @@
     updateStatsAndChart();
   }
 
+  // ========== Рендер задач с мутными кнопками ==========
   function renderCurrentDateTasks() {
     if (!currentUser) return;
     let filtered = tasks.filter(t => t.date === currentDate);
@@ -619,6 +628,7 @@
     }).join('');
   }
 
+  // Глобальные функции для onclick
   window.toggleComplete = async function(docId) {
     const task = tasks.find(t => t.id === docId);
     if (!task) return;
@@ -682,6 +692,7 @@
     taskTitle.value = '';
   }
 
+  // ========== Блок «Завтра / Послезавтра» ==========
   function renderUpcoming() {
     const tomorrowDate = new Date(Date.now() + 86400000).toISOString().slice(0,10);
     const afterTomorrowDate = new Date(Date.now() + 2*86400000).toISOString().slice(0,10);
@@ -696,6 +707,7 @@
       : t.noTasksUpcoming;
   }
 
+  // ========== Календарь ==========
   function renderCalendar() {
     const year = currentCalendarMonth.getFullYear();
     const month = currentCalendarMonth.getMonth();
@@ -738,6 +750,7 @@
     document.getElementById('nextMonthBtn')?.addEventListener('click', () => { currentCalendarMonth.setMonth(currentCalendarMonth.getMonth() + 1); renderCalendar(); });
   }
 
+  // ========== КПД ==========
   function updateStatsAndChart() {
     const now = new Date();
     const curYear = now.getFullYear(), curMonth = now.getMonth();
@@ -787,6 +800,7 @@
     );
   }
 
+  // ========== Уведомления ==========
   function showToast(msg) {
     const tDiv = document.createElement('div');
     tDiv.className = 'toast-notification';
@@ -846,6 +860,7 @@
     });
   }
 
+  // ========== Экспорт ==========
   async function screenshot() {
     const el = document.querySelector('.container');
     const canvas = await html2canvas(el, { scale: 1.5 });
@@ -898,6 +913,7 @@
     reader.readAsText(file);
   }
 
+  // ========== Темы ==========
   const themes = ['theme-light', 'theme-emerald', 'theme-soft'];
   let themeIndex = 0;
   function applyTheme(index) {
@@ -920,6 +936,7 @@
     }
   })();
 
+  // ========== PWA (с исправленным start_url) ==========
   function initPWA() {
     function makeIcon(size) {
       const c = document.createElement('canvas');
@@ -947,10 +964,13 @@
     appleLink.rel = 'apple-touch-icon'; appleLink.href = icon192;
     document.head.appendChild(appleLink);
     const manifest = {
-      name: 'PESKOV — умный помощник', short_name: 'PESKOV',
+      name: 'PESKOV — умный помощник',
+      short_name: 'PESKOV',
       description: 'Планировщик задач и встреч',
-      start_url: '.', display: 'standalone',
-      background_color: '#1e1e2f', theme_color: '#1e3c72',
+      start_url: '/',                          // ← исправлено с '.'
+      display: 'standalone',
+      background_color: '#1e1e2f',
+      theme_color: '#1e3c72',
       orientation: 'portrait-primary',
       icons: [
         { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
