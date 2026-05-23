@@ -1,1040 +1,2269 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#1e1e2f">
-  <title>PESKOV — умный помощник</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
-  <link id="pwa-manifest" rel="manifest">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="PESKOV">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#3d4fd4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PESKOV Planner">
+<title>PESKOV Smart Planner</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<style>
+:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#0d1117;--acc:#3d4fd4;--acc2:#5c6bc0;--txt:#f1f5f9;--txt2:#94a3b8;--txt3:#64748b;--brd:#1e2d45;--red:#ef4444;--grn:#10b981;--ylw:#f59e0b;--ora:#ff6b35;--r:12px}
+[data-theme="light"]{--bg:#e8f0fe;--bg2:#ffffff;--bg3:#dbe8fb;--acc:#3d4fd4;--acc2:#5c6bc0;--txt:#1e293b;--txt2:#334155;--txt3:#64748b;--brd:#c5d4f0}
+[data-theme="emerald"]{--bg:#091a12;--bg2:#0f2318;--bg3:#071510;--acc:#10b981;--acc2:#34d399;--txt:#ecfdf5;--txt2:#a7f3d0;--txt3:#3d8a68;--brd:#1a4a32}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px}
+.app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;position:relative}
+/* HEADER */
+.hdr{display:flex;align-items:center;padding:10px 14px 8px;background:var(--bg);border-bottom:1px solid var(--brd);gap:8px;flex-shrink:0;z-index:100}
+.hdr-logo{width:28px;height:28px;background:var(--acc);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.hdr-t{flex:1;min-width:0}
+.hdr-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-sub{font-size:10px;color:var(--txt3)}
+.ctrl-bar{display:flex;align-items:center;gap:6px;flex-shrink:0}
+/* THEME DROPDOWN */
+.theme-wrap{position:relative}
+.theme-btn{padding:4px 9px;border-radius:20px;border:1px solid var(--brd);background:var(--bg2);color:var(--txt2);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;line-height:1.4}
+.theme-btn::after{content:"▾";font-size:9px;opacity:.7}
+.theme-drop{display:none;position:absolute;top:calc(100% + 5px);right:0;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;min-width:140px;overflow:hidden;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.theme-drop.open{display:block}
+.theme-opt{display:flex;align-items:center;gap:8px;padding:9px 13px;cursor:pointer;font-size:12px;color:var(--txt2)}
+.theme-opt:hover{background:var(--bg3)}
+.theme-opt.on{color:var(--acc);font-weight:700}
+.theme-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.2)}
+/* LANG */
+.lang-bar{display:flex;gap:2px}
+.lb{padding:3px 7px;border-radius:20px;border:1px solid var(--brd);background:var(--bg2);color:var(--txt2);font-size:11px;font-weight:600;cursor:pointer;line-height:1.4}
+.lb.on{background:var(--acc);border-color:var(--acc);color:#fff}
+/* DATE STRIP */
+.strip-wrap{flex-shrink:0;background:var(--bg);border-bottom:1px solid var(--brd)}
+.strip-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 2px}
+.day-label{font-size:15px;font-weight:700}
+.strip-nav{display:flex;gap:4px}
+.snav-btn{background:none;border:none;color:var(--txt2);font-size:18px;cursor:pointer;padding:2px 6px;border-radius:6px}
+.snav-btn:active{background:var(--bg2)}
+.dstrip{display:flex;gap:6px;padding:6px 14px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.dstrip::-webkit-scrollbar{display:none}
+.ditem{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;border-radius:10px;cursor:pointer;flex-shrink:0;min-width:44px;position:relative}
+.ditem.on{background:var(--acc)}
+.ditem-d{font-size:11px;color:var(--txt3)}
+.ditem-n{font-size:16px;font-weight:700}
+.ditem.on .ditem-d,.ditem.on .ditem-n{color:#fff}
+.ditem-dot{width:5px;height:5px;border-radius:50%;background:var(--acc);position:absolute;bottom:4px}
+.ditem.on .ditem-dot{background:#fff}
+/* MAIN */
+.main{flex:1;overflow-y:auto;padding:12px 14px 16px;-webkit-overflow-scrolling:touch;background:var(--bg)}
+/* BOTTOM NAV */
+.bnav{display:flex;background:var(--bg2);border-top:1px solid var(--brd);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 4px 5px;cursor:pointer;border:none;background:none;color:var(--txt3);font-size:9px;font-weight:600}
+.bni.on{color:var(--acc)}
+.bni-ico{font-size:18px}
+/* FAB */
+.fab{position:fixed;bottom:calc(62px + env(safe-area-inset-bottom) + 10px);right:18px;width:52px;height:52px;border-radius:50%;background:var(--acc);color:#fff;font-size:24px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:200;transition:transform .15s}
+.fab:active{transform:scale(.93)}
+/* TASK CARD */
+.task-card{background:var(--bg2);border-radius:var(--r);padding:11px 12px;margin-bottom:7px;border-left:3px solid var(--acc);position:relative;cursor:pointer;transition:opacity .15s}.task-card:active{opacity:.85}
+.task-card.prio-urgent{border-color:var(--red)}
+.task-card.prio-medium{border-color:var(--ylw)}
+.task-card.prio-low{border-color:var(--acc)}
+.task-card.done-card{border-color:var(--txt3);opacity:.7}
+.tc-row{display:flex;align-items:flex-start;gap:9px}
+.tc-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--txt3);flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px}
+.tc-check.done-check{background:var(--grn);border-color:var(--grn);color:#fff}
+.tc-body{flex:1;min-width:0}
+.tc-name{font-size:13px;font-weight:600;margin-bottom:3px;word-break:break-word}
+.tc-name.crossed{text-decoration:line-through;color:var(--txt3)}
+.tc-meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--txt3);margin-bottom:4px}
+.prio-badge{padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700}
+.pb-urgent{background:rgba(239,68,68,.15);color:var(--red)}
+.pb-medium{background:rgba(245,158,11,.15);color:var(--ylw)}
+.pb-low{background:rgba(61,79,212,.15);color:var(--acc)}
+.tag-chip{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600}
+.tc-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px}
+.tc-subtasks-bar{margin-top:5px}
+.sub-progress-wrap{height:3px;background:var(--bg3);border-radius:2px;margin-bottom:3px;overflow:hidden}
+.sub-progress-fill{height:100%;border-radius:2px;background:var(--acc);transition:width .3s}
+.sub-progress-text{font-size:10px;color:var(--txt3)}
+.tc-actions{display:flex;gap:6px;margin-top:6px}
+.tc-btn{padding:3px 8px;border-radius:7px;border:none;font-size:11px;cursor:pointer;font-weight:500}
+.tc-btn-edit{background:rgba(61,79,212,.15);color:var(--acc)}
+.tc-btn-del{background:rgba(239,68,68,.12);color:var(--red)}
+.tc-btn-focus{background:rgba(16,185,129,.15);color:var(--grn)}
+/* FOCUS BAR */
+.focus-bar{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--acc);border-radius:var(--r);padding:10px 12px;margin-bottom:10px;position:relative}
+.fb-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.fb-type{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(61,79,212,.2);color:var(--acc)}
+.fb-type.break{background:rgba(16,185,129,.2);color:var(--grn)}
+.fb-timer{font-size:28px;font-weight:700;letter-spacing:-1px;text-align:center;margin:4px 0}
+.fb-task-name{font-size:11px;color:var(--txt2);text-align:center;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-progress{height:4px;background:var(--bg3);border-radius:2px;margin-bottom:8px;overflow:hidden}
+.fb-progress-fill{height:100%;background:var(--acc);border-radius:2px;transition:width 1s linear}
+.fb-btns{display:flex;gap:7px;justify-content:center}
+.fb-btn{padding:6px 14px;border-radius:9px;border:none;font-size:12px;font-weight:600;cursor:pointer}
+.fb-btn-pause{background:rgba(61,79,212,.2);color:var(--acc)}
+.fb-btn-stop{background:rgba(239,68,68,.15);color:var(--red)}
+.fb-pomo{font-size:10px;color:var(--txt3);text-align:center;margin-top:4px}
+/* SECTION HEADERS */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin:10px 0 7px}
+.sec-t{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.sec-c{font-size:11px;font-weight:600;background:var(--bg2);color:var(--txt2);padding:1px 7px;border-radius:10px}
+/* EMPTY */
+.empty{text-align:center;padding:50px 20px}
+.empty-ico{font-size:40px;margin-bottom:10px;opacity:.5}
+.empty-t{font-size:14px;color:var(--txt2);margin-bottom:4px}
+.empty-s{font-size:12px;color:var(--txt3)}
+/* TAG FILTER BAR */
+.tag-filter-bar{display:flex;gap:6px;padding:0 0 10px;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.tag-filter-bar::-webkit-scrollbar{display:none}
+.tfbtn{padding:4px 12px;border-radius:20px;border:1px solid var(--brd);background:var(--bg2);color:var(--txt2);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.tfbtn.active{border-width:2px}
+.search-box{display:flex;align-items:center;background:var(--bg2);border-radius:10px;padding:8px 12px;gap:8px;margin-bottom:10px}
+.search-ico{font-size:14px;color:var(--txt3)}
+.search-box input{background:none;border:none;color:var(--txt);font-size:13px;flex:1;outline:none}
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-card{background:var(--bg2);border-radius:var(--r);padding:12px;text-align:center}
+.stat-n{font-size:22px;font-weight:700;margin-bottom:2px}
+.stat-l{font-size:10px;color:var(--txt3)}
+.bar-chart-box{background:var(--bg2);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.bar-chart-title{font-size:11px;color:var(--txt3);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.bar-row{display:flex;align-items:flex-end;gap:5px;height:70px}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
+.bar-fill{background:var(--acc);border-radius:3px 3px 0 0;width:100%;min-height:3px;transition:height .3s}
+.bar-day{font-size:9px;color:var(--txt3)}
+.bar-val-t{font-size:9px;color:var(--txt2)}
+.streak-box{background:var(--bg2);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.streak-title{font-size:11px;color:var(--txt3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.streak-row{display:flex;gap:4px;flex-wrap:wrap}
+.streak-day{width:18px;height:18px;border-radius:3px;background:var(--bg3);font-size:7px;color:var(--txt3);display:flex;align-items:center;justify-content:center}
+.streak-day.s-full{background:var(--acc);color:#fff}
+.streak-day.s-part{background:rgba(61,79,212,.3);color:var(--acc)}
+/* SROW (settings rows) */
+.srow{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;color:var(--txt)}
+.srow:not(:last-child){border-bottom:1px solid var(--brd)}
+.srow:active{background:var(--bg3)}
+.srow-ico{font-size:18px;width:24px;text-align:center}
+.srow-lbl{flex:1;font-size:13px}
+.notif-banner{background:rgba(61,79,212,.15);border:1px solid rgba(61,79,212,.3);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--acc);cursor:pointer}
+/* NOTES */
+.note-card{background:var(--bg2);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--acc);cursor:pointer;position:relative}
+.note-card:active{opacity:.85}
+.note-title{font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note-preview{font-size:11px;color:var(--txt3);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.note-meta{font-size:10px;color:var(--txt3);margin-top:5px;display:flex;gap:8px;align-items:center}
+.note-del{position:absolute;top:9px;right:9px;background:none;border:none;color:var(--txt3);font-size:18px;cursor:pointer;padding:2px 6px;line-height:1}
+.attach-count{font-size:10px;color:var(--acc);background:rgba(61,79,212,.12);padding:1px 6px;border-radius:8px}
+/* REC WIDGET */
+.rec-widget{background:var(--bg2);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;border:1px solid var(--brd)}
+.rec-widget-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.rec-widget-t{font-size:12px;font-weight:700;color:var(--txt2)}
+.rec-timer{font-size:13px;font-weight:700;color:var(--red);min-width:44px;text-align:right}
+.rec-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.rbtn{padding:6px 11px;border-radius:9px;border:none;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px}
+.rbtn.r-rec{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+.rbtn.r-stop{background:#dc2626;color:#fff}
+.rbtn.r-play{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.rbtn.r-save{background:rgba(61,79,212,.15);color:var(--acc2);border:1px solid rgba(61,79,212,.3)}
+.rbtn:disabled{opacity:.35;pointer-events:none}
+.dict-result{background:var(--bg3);border-radius:9px;padding:10px 12px;margin-top:6px;display:none}
+.dict-result.show{display:block}
+.dict-audio-player{width:100%;margin-bottom:8px;border-radius:8px;height:36px}
+.dict-transcript-label{font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.dict-transcript{font-size:12px;color:var(--txt2);line-height:1.6;max-height:80px;overflow-y:auto;white-space:pre-wrap}
+.dict-save-row{display:flex;gap:6px;margin-top:8px}
+/* NOTE OVERLAY */
+.note-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:flex-end}
+.note-ov.open{display:flex}
+.note-mdl{background:var(--bg2);border-radius:20px 20px 0 0;padding:16px 16px 36px;width:100%;max-height:92vh;display:flex;flex-direction:column;gap:10px}
+.note-mdl-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.note-ta{width:100%;background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;color:var(--txt);font-size:13px;outline:none;resize:none;min-height:160px;line-height:1.7;font-family:inherit}
+.note-ta:focus{border-color:var(--acc)}
+.note-voice-bar{display:flex;gap:7px;align-items:center}
+.btn-voice-note{padding:8px 12px;border-radius:10px;background:rgba(61,79,212,.12);color:var(--acc2);font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(61,79,212,.25)}
+.btn-voice-note.on{background:#dc2626;color:#fff;border-color:#dc2626}
+.attach-area{border:1.5px dashed var(--brd);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:var(--txt3)}
+.attach-area:hover{border-color:var(--acc);color:var(--acc)}
+.attach-list{display:flex;flex-direction:column;gap:5px}
+.attach-item{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:8px;padding:7px 10px}
+.attach-ico{font-size:16px;flex-shrink:0}
+.attach-info{flex:1;min-width:0}
+.attach-name{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.attach-size{font-size:10px;color:var(--txt3)}
+.attach-del{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:16px;padding:2px 5px;flex-shrink:0}
+.attach-del:hover{color:var(--red)}
+.link-chip{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:8px;padding:7px 10px;}
+.link-url{font-size:11px;color:var(--acc);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;}
+.link-url:hover{text-decoration:underline;}
+.link-add-row{display:flex;gap:6px;margin-bottom:6px;}
+.link-add-input{flex:1;background:var(--bg3);border:1px solid var(--brd);border-radius:9px;padding:8px 10px;color:var(--txt);font-size:12px;outline:none;font-family:inherit;}
+.link-add-input:focus{border-color:var(--acc);}
+.link-add-btn{padding:8px 14px;border-radius:9px;background:rgba(61,79,212,.15);color:var(--acc);border:1px solid rgba(61,79,212,.3);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+/* TAG MANAGER */
+.tag-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.tag-item{display:flex;align-items:center;gap:9px;background:var(--bg2);border-radius:10px;padding:9px 12px}
+.tag-swatch{width:14px;height:14px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(255,255,255,.2)}
+.tag-name-d{flex:1;font-size:13px;font-weight:500}
+.tag-item-btns{display:flex;gap:4px}
+.tag-ib{padding:3px 8px;border-radius:7px;border:none;font-size:11px;cursor:pointer;font-weight:500}
+.tag-ib-edit{background:rgba(61,79,212,.15);color:var(--acc)}
+.tag-ib-del{background:rgba(239,68,68,.12);color:var(--red)}
+.color-grid{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.csw{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s}
+.csw:hover{transform:scale(1.15)}
+.csw.selected{border-color:#fff;transform:scale(1.1)}
+/* OVERLAYS & MODALS */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;align-items:flex-end;justify-content:center}
+.ov.open{display:flex}
+.mdl{background:var(--bg2);border-radius:20px 20px 0 0;padding:18px 16px 36px;width:100%;max-height:90vh;overflow-y:auto}
+.mdl-t{display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:700;margin-bottom:14px}
+.mclose{background:none;border:none;color:var(--txt3);font-size:22px;cursor:pointer;line-height:1;padding:0 2px}
+.fg{margin-bottom:10px}
+.fl{font-size:11px;color:var(--txt3);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.fi{width:100%;background:var(--bg3);border:1px solid var(--brd);border-radius:9px;padding:9px 12px;color:var(--txt);font-size:13px;outline:none;font-family:inherit}
+.fi:focus{border-color:var(--acc)}
+select.fi{cursor:pointer;appearance:none;-webkit-appearance:none}
+.prio-row{display:flex;gap:6px}
+.pr{flex:1;padding:7px 6px;border-radius:9px;border:1.5px solid var(--brd);background:var(--bg3);color:var(--txt2);font-size:11px;font-weight:600;cursor:pointer;text-align:center}
+.pr.on-low{border-color:var(--acc);color:var(--acc);background:rgba(61,79,212,.12)}
+.pr.on-medium{border-color:var(--ylw);color:var(--ylw);background:rgba(245,158,11,.12)}
+.pr.on-urgent{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.12)}
+.time-row{display:flex;gap:8px}
+.time-row .fg{flex:1}
+.attach-btn{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px dashed var(--brd);border-radius:9px;padding:9px 12px;cursor:pointer;color:var(--txt3);font-size:12px;width:100%;justify-content:center}
+.attach-btn:hover{border-color:var(--acc);color:var(--acc)}
+.subtasks-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.subtasks-hdr-t{font-size:11px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.add-sub-btn{padding:3px 10px;border-radius:7px;border:1px solid var(--acc);background:rgba(61,79,212,.1);color:var(--acc);font-size:11px;cursor:pointer;font-weight:600}
+.subtask-row{display:flex;align-items:center;gap:7px;background:var(--bg3);border-radius:8px;padding:6px 8px;margin-bottom:5px}
+.subtask-row input[type=text]{background:none;border:none;flex:1;color:var(--txt);font-size:12px;outline:none}
+.subtask-del{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:16px;padding:0 3px;line-height:1}
+.tag-select-grid{display:flex;gap:6px;flex-wrap:wrap}
+.tag-select-chip{padding:4px 10px;border-radius:20px;border:1.5px solid var(--brd);background:var(--bg3);font-size:11px;font-weight:600;cursor:pointer;color:var(--txt2)}
+.tag-select-chip.selected{border-width:2px}
+.btn-p{width:100%;padding:13px;border-radius:12px;background:var(--acc);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
+.btn-p:active{opacity:.85}
+.btn-d{width:100%;padding:11px;border-radius:12px;background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25);font-size:13px;font-weight:600;cursor:pointer;margin-top:6px}
+.btn-d:active{opacity:.8}
+.voice-fab{position:fixed;bottom:calc(62px + env(safe-area-inset-bottom) + 10px);right:80px;width:46px;height:46px;border-radius:50%;background:var(--bg2);color:var(--acc);font-size:18px;border:1.5px solid var(--acc);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(0,0,0,.25);z-index:200;transition:all .15s}
+.voice-fab:active{transform:scale(.93)}
+.voice-fab.listening{background:var(--red);color:#fff;border-color:var(--red);animation:vpulse 1s infinite}
+@keyframes vpulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
+.attach-preview{margin-top:6px;border-radius:8px;overflow:hidden;background:var(--bg3);position:relative}
+.attach-preview img{width:100%;display:block;cursor:pointer;max-height:200px;object-fit:cover}
+.attach-preview-pdf{padding:14px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.attach-preview-pdf:hover{background:var(--bg2)}
+.preview-mdl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:center;justify-content:center}
+.preview-mdl.open{display:flex}
+.preview-close{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.6);color:#fff;border:none;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer;z-index:1001}
+.preview-content{max-width:95vw;max-height:95vh;border-radius:8px}
+.preview-content img{max-width:95vw;max-height:95vh;display:block}
+.preview-content iframe{width:95vw;height:90vh;border:none;background:#fff;border-radius:8px}
+.preview-content audio{width:90vw;max-width:500px}
+.preview-content video{max-width:95vw;max-height:95vh}
+.voice-quick-mdl{background:var(--bg2);border-radius:20px 20px 0 0;padding:24px 18px 32px;width:100%;text-align:center}
+.vq-pulse{width:80px;height:80px;border-radius:50%;background:rgba(239,68,68,.15);border:3px solid var(--red);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 14px;animation:vpulse 1s infinite}
+.vq-hint{font-size:11px;color:var(--txt3);margin-bottom:10px;line-height:1.5}
+.vq-result{background:var(--bg3);border-radius:10px;padding:10px 12px;margin-bottom:12px;min-height:40px;font-size:13px;line-height:1.5;text-align:left}
+.vq-parsed{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;text-align:left;display:none}
+.vq-parsed.show{display:block}
+.vq-parsed-row{display:flex;justify-content:space-between;padding:3px 0;color:var(--txt2)}
+.vq-parsed-label{color:var(--txt3);font-size:11px}
+.vq-parsed-val{color:var(--grn);font-weight:600;font-size:12px}
 
-  <!-- Библиотеки -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, 'Segoe UI', Roboto; }
-    body { background: #f4f7fc; color: #1e2a3e; padding: 20px; transition: background 0.2s, color 0.2s; }
-
-    body.theme-light { background: #f4f7fc; color: #1e2a3e; }
-    body.theme-light .card, body.theme-light .calendar-grid { background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    body.theme-light .task-item { background: #f9fafb; }
-    body.theme-light .upcoming-card { background: #f1f5f9; }
-    body.theme-light .kpi-item { background: #eef2ff; }
-    body.theme-light .cal-day { background: #eef2ff; }
-
-    body.theme-emerald { background: #0a2f2a; color: #d9f0ec; }
-    body.theme-emerald .card, body.theme-emerald .calendar-grid { background: #134e42; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
-    body.theme-emerald .task-item { background: #1e6b5c; }
-    body.theme-emerald .upcoming-card { background: #0f3d34; }
-    body.theme-emerald label { color: #b9f3e8; }
-    body.theme-emerald input, body.theme-emerald select, body.theme-emerald textarea { background: #2c7a6b; border-color: #52b09b; color: #f0faf7; }
-    body.theme-emerald button { background: #2c9c8a; }
-    body.theme-emerald .icon-btn-sm, body.theme-emerald .dropdown-btn { background: #1f6658; color: white; }
-    body.theme-emerald .kpi-item { background: #0f473d; }
-    body.theme-emerald .cal-day { background: #1c6e5e; }
-    body.theme-emerald .cal-day.selected { background: #3dbd9c; color: #00261f; }
-    body.theme-emerald .dropdown-content { background: #1e5f51; border-color: #3b9f89; }
-    body.theme-emerald .month-block { border-color: rgba(255,255,255,0.1); }
-    body.theme-emerald .month-label { color: #b0ede0; }
-
-    body.theme-soft { background: #fff7f0; color: #5e4b3c; }
-    body.theme-soft .card, body.theme-soft .calendar-grid { background: #fffef7; box-shadow: 0 6px 14px rgba(0,0,0,0.03); border: 1px solid #ffe3c9; }
-    body.theme-soft .task-item { background: #fff4ea; }
-    body.theme-soft .upcoming-card { background: #ffefdf; }
-    body.theme-soft label { color: #b07d5c; }
-    body.theme-soft input, body.theme-soft select, body.theme-soft textarea { background: #ffffff; border-color: #f7cdb0; color: #5e4b3c; }
-    body.theme-soft button { background: #d9b48b; color: #3e2a1f; }
-    body.theme-soft .icon-btn-sm, body.theme-soft .dropdown-btn { background: #f8e1cd; color: #7a5a44; }
-    body.theme-soft .kpi-item { background: #ffefdf; }
-    body.theme-soft .cal-day { background: #faeedf; }
-    body.theme-soft .cal-day.selected { background: #e7b88a; color: white; }
-    body.theme-soft .dropdown-content { background: #fff5ea; border-color: #f7dbbc; }
-    body.theme-soft .month-block { border-color: #f7cdb0; }
-    body.theme-soft .month-label { color: #b07d5c; }
-
-    .container { max-width: 1500px; margin: 0 auto; }
-    .header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 12px; }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .caricature { width: 48px; height: 48px; border-radius: 30px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: linear-gradient(135deg, #FFDEE9, #B5FFFC); }
-    .caricature svg { width: 44px; height: 44px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
-    .brand h1 { font-size: 1.8rem; background: linear-gradient(135deg, #1e3c72, #2a5298); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    body.theme-emerald .brand h1 { background: linear-gradient(135deg, #b0f3e0, #3dd6b3); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    body.theme-soft .brand h1 { background: linear-gradient(135deg, #daa06a, #b87a4b); -webkit-background-clip: text; background-clip: text; color: transparent; }
-
-    .right-tools { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.03); padding: 4px 10px; border-radius: 48px; backdrop-filter: blur(2px); }
-    .icon-btn-sm { background: #eef2f6; border: none; padding: 6px 10px; border-radius: 32px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.1s; font-weight: 500; }
-    .icon-btn-sm:hover { filter: brightness(0.94); transform: scale(0.96); }
-    .lang-select { background: #eef2f6; border: none; padding: 6px 12px; border-radius: 32px; font-size: 0.75rem; font-weight: 500; cursor: pointer; outline: none; }
-    body.theme-emerald .lang-select { background: #1f6658; color: white; }
-    body.theme-soft .lang-select { background: #f8e1cd; color: #7a5a44; }
-
-    .dropdown { position: relative; display: inline-block; }
-    .dropdown-btn { background: #eef2f6; border: none; padding: 6px 10px; border-radius: 32px; cursor: pointer; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 4px; transition: 0.1s; }
-    .dropdown-btn:hover { filter: brightness(0.94); transform: scale(0.96); }
-    .dropdown-content { display: none; position: absolute; right: 0; top: 110%; background: white; min-width: 170px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); border-radius: 24px; z-index: 100; overflow: hidden; border: 1px solid #e2e8f0; backdrop-filter: blur(4px); }
-    .dropdown-content a, .dropdown-content button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 16px; text-decoration: none; background: transparent; border: none; text-align: left; font-size: 0.8rem; cursor: pointer; font-weight: 500; color: inherit; transition: 0.05s; }
-    .dropdown-content a:hover, .dropdown-content button:hover { background: rgba(0,0,0,0.05); }
-    .show { display: block; }
-
-    .card { background: white; border-radius: 28px; padding: 18px 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .flex-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 16px; }
-    .form-group { flex: 1; min-width: 130px; }
-    label { font-weight: 600; font-size: 0.75rem; display: block; margin-bottom: 4px; color: #4a5568; }
-    input, select, button, textarea { background: #f9fafb; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 20px; font-size: 0.9rem; width: 100%; }
-    button { background: #3b6ea0; color: white; border: none; font-weight: 600; cursor: pointer; transition: 0.1s; }
-    button:hover { filter: brightness(0.95); }
-    .task-list { max-height: 380px; overflow-y: auto; margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-    .task-item { background: #f9fafb; border-radius: 20px; padding: 12px 16px; border-left-width: 6px; border-left-style: solid; transition: 0.1s; }
-    .task-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
-    .task-title { font-weight: 700; }
-    .task-time { font-size: 0.8rem; color: #2c5282; font-weight: 500; margin-top: 4px; }
-    .task-reason { font-size: 0.7rem; color: #6b7280; margin-top: 4px; font-style: italic; }
-    .task-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-    .task-actions button { background: none; padding: 4px 12px; width: auto; font-size: 0.7rem; }
-    .task-actions button:first-child { background: #2c6e2c; }
-    .task-actions button:nth-child(2) { background: #2c6e9e; }
-    .task-actions button:last-child { background: #a03a2e; }
-
-    .task-actions button:disabled,
-    .task-actions button.muted-btn {
-      opacity: 0.35;
-      filter: grayscale(0.6);
-      pointer-events: none;
-      user-select: none;
-      transform: none !important;
-      cursor: default;
-    }
-
-    .priority-1 { border-left-color: #dc2626; }
-    .priority-2 { border-left-color: #f97316; }
-    .priority-3 { border-left-color: #3b82f6; }
-    .upcoming-panel { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
-    .upcoming-card { background: #f1f5f9; border-radius: 20px; padding: 12px 18px; flex: 1; min-width: 200px; }
-    .upcoming-card h4 { margin-bottom: 8px; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
-    .calendar-search { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; flex: 2; }
-    .calendar-grid { background: white; border-radius: 20px; padding: 12px; min-width: 260px; }
-    .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 6px; }
-    .cal-day { text-align: center; padding: 6px; border-radius: 40px; cursor: pointer; font-size: 0.8rem; transition: 0.05s; }
-    .cal-day.selected { background: #2c6e9e; color: white; }
-    .cal-day.overdue { box-shadow: inset 0 0 0 2px #dc2626; color: #dc2626; font-weight: 600; }
-    .cal-day.selected.overdue { box-shadow: inset 0 0 0 2px #dc2626; }
-    .cal-month-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .cal-month-nav button { background: transparent; border: 1px solid currentColor; padding: 4px 12px; border-radius: 40px; font-size: 0.85rem; width: auto; cursor: pointer; font-weight: normal; color: inherit; }
-    .search-input { flex: 1; min-width: 180px; }
-
-    .stats-months { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
-    .month-block { flex: 1; min-width: 240px; border: 1px solid rgba(0,0,0,0.07); border-radius: 20px; padding: 14px 16px; }
-    .month-label { font-size: 0.78rem; font-weight: 700; margin-bottom: 10px; color: #4a5568; }
-    .stats { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-    .kpi-item { background: #eef2ff; border-radius: 28px; padding: 8px 18px; text-align: center; }
-    .chart-box { width: 140px; height: 120px; }
-
-    .footer-note { font-size: 0.7rem; text-align: center; opacity: 0.6; margin-top: 20px; }
-    .toast-notification { position: fixed; bottom: 20px; right: 20px; background: white; border-left: 5px solid #3b6ea0; border-radius: 20px; padding: 12px 18px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); z-index: 1000; cursor: pointer; }
-    .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-    .reschedule-modal, .urgent-modal { background: white; border-radius: 28px; padding: 24px; max-width: 420px; width: 90%; }
-    body.theme-emerald .reschedule-modal, body.theme-emerald .urgent-modal { background: #1e5f51; color: #effffa; }
-    body.theme-soft .reschedule-modal, body.theme-soft .urgent-modal { background: #fffaf2; }
-    .urgent-modal { border: 2px solid red; animation: pulse 0.5s infinite alternate; }
-    @keyframes pulse { from { box-shadow: 0 0 0 2px red; } to { box-shadow: 0 0 0 8px rgba(255,0,0,0.3); } }
-    .tiny-export-group { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 12px; flex-wrap: wrap; }
-    .tiny-btn { background: #eef2f6; border: none; padding: 4px 10px; border-radius: 24px; font-size: 0.7rem; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; width: auto; }
-    .tiny-export-group button { width: auto; }
-    @media (max-width: 700px) { .right-tools { gap: 4px; } .brand h1 { font-size: 1.4rem; } }
-
-    #pwaInstallBtn { display: none; background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border: none; padding: 6px 14px; border-radius: 32px; font-size: 0.82rem; font-weight: 700; cursor: pointer; animation: installPulse 2s infinite; gap: 6px; align-items: center; }
-    body.theme-emerald #pwaInstallBtn { background: linear-gradient(135deg, #0f473d, #2c9c8a); }
-    body.theme-soft #pwaInstallBtn { background: linear-gradient(135deg, #daa06a, #b87a4b); }
-    @keyframes installPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(59,110,160,0.4); } 50% { box-shadow: 0 0 0 6px rgba(59,110,160,0); } }
-
-    #pwaToast { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1e3c72; color: white; padding: 12px 20px; border-radius: 24px; font-size: 0.82rem; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 3000; text-align: center; animation: slideUp 0.3s ease; }
-    @keyframes slideUp { from { transform: translateX(-50%) translateY(20px); opacity:0; } to { transform: translateX(-50%) translateY(0); opacity:1; } }
-
-    #authContainer { max-width: 400px; margin: 40px auto; background: white; border-radius: 28px; padding: 32px; box-shadow: 0 12px 28px rgba(0,0,0,0.08); }
-    #authContainer input { margin-bottom: 12px; }
-    #authContainer button { margin-bottom: 8px; }
-    #authContainer .small-link { font-size: 0.8rem; text-align: center; display: block; margin: 8px 0; color: #2c6e9e; cursor: pointer; }
-    .auth-error { color: red; font-size: 0.8rem; margin-bottom: 10px; }
-    .hidden { display: none !important; }
-  </style>
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg2);border:1px solid var(--brd);color:var(--txt);padding:10px 18px;border-radius:24px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transition:all .25s;white-space:nowrap;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ALERT MODAL */
+.alert-mdl{background:var(--bg2);border-radius:20px;padding:24px 20px;width:90%;max-width:340px;margin:auto}
+.alert-ico{font-size:36px;text-align:center;margin-bottom:10px}
+.alert-t{font-size:16px;font-weight:700;text-align:center;margin-bottom:6px}
+.alert-sub{font-size:13px;color:var(--txt2);text-align:center;margin-bottom:18px}
+.alert-btns{display:flex;gap:8px}
+.alert-btn{flex:1;padding:11px;border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer}
+.alert-btn-ok{background:var(--acc);color:#fff}
+.alert-btn-snz{background:var(--bg3);color:var(--txt2)}
+/* VOICE OVERLAY */
+.voice-mdl{background:var(--bg2);border-radius:20px 20px 0 0;padding:28px 20px 40px;width:100%;text-align:center}
+.voice-pulse{width:70px;height:70px;border-radius:50%;background:rgba(239,68,68,.15);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px;animation:mpulse 1s infinite}
+@keyframes mpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:.8}}
+.voice-status{font-size:13px;color:var(--txt2);margin-bottom:8px}
+.voice-result{font-size:13px;color:var(--txt);min-height:40px;margin-bottom:14px;line-height:1.5;font-weight:500}
+.voice-btns{display:flex;gap:8px;justify-content:center}
+.vbtn{padding:10px 20px;border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer}
+.vbtn-stop{background:var(--red);color:#fff}
+.vbtn-ok{background:var(--acc);color:#fff}
+.vbtn-cancel{background:var(--bg3);color:var(--txt2)}
+/* CALENDAR */
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-m{font-size:15px;font-weight:700}
+.cal-nav{display:flex;gap:6px}
+.cal-navbtn{background:none;border:1px solid var(--brd);color:var(--txt2);padding:4px 10px;border-radius:8px;cursor:pointer;font-size:14px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px}
+.cal-d{text-align:center;font-size:11px;color:var(--txt3);padding:4px 0;font-weight:600}
+.cal-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-size:13px;position:relative;flex-direction:column;gap:1px}
+.cal-cell:hover{background:var(--bg3)}
+.cal-cell.today{background:rgba(61,79,212,.2);font-weight:700;color:var(--acc)}
+.cal-cell.selected{background:var(--acc);color:#fff}
+.cal-cell.has-task::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--acc);position:absolute;bottom:3px}
+.cal-cell.selected.has-task::after{background:#fff}
+/* HELP */
+.help-section{background:var(--bg2);border-radius:11px;padding:12px 14px;margin-bottom:8px}
+.help-h{font-size:13px;font-weight:700;margin-bottom:6px;color:var(--txt)}
+.help-t{font-size:12px;color:var(--txt2);line-height:1.8}
+.recur-badge{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;background:rgba(16,185,129,.12);color:var(--grn)}
+.sync-card{background:var(--bg2);border-radius:var(--r);padding:14px;margin-bottom:10px;border:1px solid var(--brd)}
+.sync-card-hdr{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sync-id-box{background:var(--bg3);border-radius:9px;padding:10px 12px;font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--acc);border:1px solid var(--brd);margin-bottom:10px;word-break:break-all;cursor:pointer}
+.sync-btns{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px}
+.sync-btn{flex:1;padding:9px 10px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;min-width:80px}
+.sync-btn-push{background:var(--acc);color:#fff}
+.sync-btn-pull{background:rgba(16,185,129,.15);color:var(--grn);border:1px solid rgba(16,185,129,.3)}
+.sync-btn-sec{background:var(--bg3);color:var(--txt2);border:1px solid var(--brd)}
+.sync-status{font-size:11px;color:var(--txt3);margin-top:4px}
+</style>
 </head>
-<body class="theme-light">
-
-<!-- Экран входа / регистрации -->
-<div id="authContainer">
-  <h2 style="margin-bottom:16px;text-align:center;">PESKOV</h2>
-  <form id="authForm">
-    <input type="email" id="authEmail" placeholder="Email" required>
-    <input type="password" id="authPassword" placeholder="Пароль" required>
-    <div class="auth-error" id="authError"></div>
-    <button type="submit" id="authBtn">Войти</button>
-  </form>
-  <span class="small-link" id="toggleAuthMode">Нет аккаунта? Зарегистрироваться</span>
+<body>
+<div class="app">
+<!-- TOAST --><div id="toast" class="toast"></div>
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-logo">P</div>
+  <div class="hdr-t">
+    <div class="hdr-title">PESKOV Smart Planner</div>
+    <div class="hdr-sub" id="hdrSub">v5.0</div>
+  </div>
+  <div class="ctrl-bar">
+    <div class="theme-wrap" id="themeWrap">
+      <button class="theme-btn" id="themeBtn" onclick="toggleThemeDrop()"><span id="themeBtnLabel">Тема</span></button>
+      <div class="theme-drop" id="themeDrop">
+        <div class="theme-opt" id="topt_dark" onclick="setTheme('dark');toggleThemeDrop()"><span class="theme-dot" style="background:#3d4fd4"></span><span id="topt_dark_lbl">Тёмная</span></div>
+        <div class="theme-opt" id="topt_light" onclick="setTheme('light');toggleThemeDrop()"><span class="theme-dot" style="background:#3d4fd4;border:1px solid #c5d4f0"></span><span id="topt_light_lbl">Светлая</span></div>
+        <div class="theme-opt" id="topt_emerald" onclick="setTheme('emerald');toggleThemeDrop()"><span class="theme-dot" style="background:#10b981"></span><span id="topt_emerald_lbl">Изумрудная</span></div>
+      </div>
+    </div>
+    <div class="lang-bar">
+      <button class="lb on" id="lb_ru" onclick="setLang('ru')">RU</button>
+      <button class="lb" id="lb_en" onclick="setLang('en')">EN</button>
+      <button class="lb" id="lb_uz" onclick="setLang('uz')">UZ</button>
+    </div>
+  </div>
 </div>
-
-<!-- Основное приложение -->
-<div id="appContainer" class="container hidden">
-  <div class="header-row">
-    <div class="brand">
-      <div class="caricature">
-        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF416C"/><stop offset="100%" stop-color="#FF4B2B"/></linearGradient><linearGradient id="grad2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#F9D423"/><stop offset="100%" stop-color="#FF4E50"/></linearGradient></defs>
-          <polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="url(#grad)" stroke="#fff" stroke-width="2"/>
-          <polygon points="50,20 75,35 75,65 50,80 25,65 25,35" fill="url(#grad2)" opacity="0.9"/>
-          <circle cx="50" cy="50" r="8" fill="white"/>
-          <path d="M50 35 L55 45 L65 48 L55 52 L50 62 L45 52 L35 48 L45 45 Z" fill="#FFE600" stroke="#D32F2F" stroke-width="1"/>
-        </svg>
-      </div>
-      <h1>PESKOV</h1>
-    </div>
-    <div class="right-tools">
-      <select id="langSwitcher" class="lang-select">
-        <option value="ru">🇷🇺 Рус</option>
-        <option value="en">🇬🇧 Eng</option>
-        <option value="uz">🇺🇿 Oʻzb</option>
-      </select>
-      <button class="icon-btn-sm" id="themeCycleBtn" title="Сменить тему">🎨</button>
-      <button id="pwaInstallBtn" onclick="triggerPWAInstall()">📲 Установить</button>
-      <button id="logoutBtn" class="icon-btn-sm">🚪 Выйти</button>
-      <div class="dropdown" id="exportDropdown">
-        <button class="dropdown-btn" id="dropdownToggleBtn">⚡📎</button>
-        <div class="dropdown-content" id="dropdownMenu">
-          <button id="menuScreenshotBtn">📸 Снимок экрана</button>
-          <button id="menuPdfBtn">📄 PDF</button>
-          <button id="menuWordBtn">📝 Word</button>
-          <button id="menuExcelBtn">📊 Excel</button>
-        </div>
-      </div>
+<!-- DATE STRIP -->
+<div class="strip-wrap" id="stripWrap">
+  <div class="strip-hdr">
+    <div class="day-label" id="dayLabel">Сегодня</div>
+    <div class="strip-nav">
+      <button class="snav-btn" onclick="shiftWeek(-1)">‹</button>
+      <button class="snav-btn" onclick="shiftWeek(1)">›</button>
     </div>
   </div>
-
-  <!-- Форма создания задачи -->
-  <div class="card">
-    <div class="flex-row">
-      <div class="form-group"><label data-i18n="taskLabel">📌 Задача</label><input type="text" id="taskTitle" placeholder="Что сделать?"></div>
-      <div class="form-group"><label data-i18n="startLabel">🕘 Начало</label><input type="time" id="startTime" value="09:00"></div>
-      <div class="form-group"><label data-i18n="endLabel">🕔 Конец</label><input type="time" id="endTime" value="10:00"></div>
-      <div class="form-group">
-        <label data-i18n="priorityLabel">⚡ Важность</label>
-        <select id="taskPriority">
-          <option value="1">🔥 Высокая</option>
-          <option value="2">🟠 Средняя</option>
-          <option value="3">🔵 Низкая</option>
-        </select>
-      </div>
-      <div class="form-group"><button id="addTaskBtn" style="margin-top:20px" data-i18n="addBtn">➕ Добавить</button></div>
-    </div>
-    <div class="flex-row">
-      <div class="form-group"><label data-i18n="dateLabel">📅 Дата задачи</label><input type="date" id="selectedDate"></div>
-      <div class="form-group">
-        <label data-i18n="filterLabel">⭐ Фильтр</label>
-        <select id="filterPriority">
-          <option value="all">Все</option>
-          <option value="1">Высокие</option>
-          <option value="2">Средние</option>
-          <option value="3">Низкие</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <!-- Приближающиеся задачи + календарь -->
-  <div class="upcoming-panel">
-    <div class="upcoming-card"><h4 data-i18n="tomorrowTitle">📅 Завтра</h4><div id="tomorrowTasks">—</div></div>
-    <div class="upcoming-card"><h4 data-i18n="afterTitle">📆 Послезавтра</h4><div id="afterTomorrowTasks">—</div></div>
-    <div class="calendar-search">
-      <div class="calendar-grid" id="miniCalendar"></div>
-      <div class="form-group search-input"><label data-i18n="searchLabel">🔍 Поиск по задачам</label><input type="text" id="searchTasks" placeholder="Название..."></div>
-    </div>
-  </div>
-
-  <!-- Список задач на выбранную дату -->
-  <div class="card">
-    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; align-items:center;">
-      <h3><span data-i18n="tasksHeading">📋 Задачи на </span><span id="selectedDateLabel">...</span></h3>
-      <div class="tiny-export-group">
-        <button class="tiny-btn" id="inlineWordBtn">📄 Word</button>
-        <button class="tiny-btn" id="inlineExcelBtn">📊 Excel</button>
-        <button class="tiny-btn" id="inlinePdfBtn">📑 PDF</button>
-        <button id="importTasksBtn" style="background:#6c757d;padding:4px 10px;font-size:0.7rem;" data-i18n="importBtn">📂 Импорт</button>
-        <button id="exportJsonBtn" style="background:#2c6e9e;padding:4px 10px;font-size:0.7rem;">💾 JSON</button>
-      </div>
-      <input type="file" id="importFile" accept=".json" style="display:none">
-    </div>
-    <div id="tasksContainer" class="task-list"></div>
-  </div>
-
-  <!-- КПД -->
-  <div class="card">
-    <h3 data-i18n="statsTitle">📊 КПД (коэффициент полезного действия)</h3>
-    <div class="stats-months">
-      <div class="month-block">
-        <div class="month-label" id="currentMonthLabel">—</div>
-        <div class="stats">
-          <div class="kpi-item"><span data-i18n="totalLabel">📋 Всего</span><br><strong id="totalTasksCur">0</strong></div>
-          <div class="kpi-item"><span data-i18n="completedLabel">✅ Выполнено</span><br><strong id="completedTasksCur">0</strong></div>
-          <div class="kpi-item"><span data-i18n="progressLabel">📈 Прогресс</span><br><strong id="efficiencyPercentCur">0%</strong></div>
-          <div class="chart-box"><canvas id="efficiencyChartCur" width="140" height="120"></canvas></div>
-        </div>
-      </div>
-      <div class="month-block">
-        <div class="month-label" id="prevMonthLabel">—</div>
-        <div class="stats">
-          <div class="kpi-item"><span data-i18n="totalLabel">📋 Всего</span><br><strong id="totalTasksPrev">0</strong></div>
-          <div class="kpi-item"><span data-i18n="completedLabel">✅ Выполнено</span><br><strong id="completedTasksPrev">0</strong></div>
-          <div class="kpi-item"><span data-i18n="progressLabel">📈 Прогресс</span><br><strong id="efficiencyPercentPrev">0%</strong></div>
-          <div class="chart-box"><canvas id="efficiencyChartPrev" width="140" height="120"></canvas></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer-note" data-i18n="footerNote">🔔 Уведомления за день и утро. Срочные — красное окно + звук.</div>
+  <div class="dstrip" id="dstrip"></div>
 </div>
-
-<div id="pwaToast"></div>
-
+<!-- MAIN -->
+<div class="main" id="main"></div>
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="bni on" id="n0" onclick="setTab(0)"><span class="bni-ico">🏠</span><span id="nl0">Главная</span></button>
+  <button class="bni" id="n1" onclick="setTab(1)"><span class="bni-ico">📅</span><span id="nl1">Календарь</span></button>
+  <button class="bni" id="n2" onclick="setTab(2)"><span class="bni-ico">📋</span><span id="nl2">Все</span></button>
+  <button class="bni" id="n3" onclick="setTab(3)"><span class="bni-ico">📝</span><span id="nl3">Заметки</span></button>
+  <button class="bni" id="n4" onclick="setTab(4)"><span class="bni-ico">⚙️</span><span id="nl4">Настройки</span></button>
+</nav>
+<!-- FAB -->
+<button class="fab" id="mainFab" onclick="openFab()">+</button>
+<button class="voice-fab" id="voiceFab" onclick="openVoiceQuickAdd()" title="Голосовой ввод">🎙</button>
+<!-- PREVIEW OVERLAY -->
+<div class="preview-mdl" id="previewOv" onclick="if(event.target===this)closePreview()">
+  <button class="preview-close" onclick="closePreview()">✕</button>
+  <div class="preview-content" id="previewContent"></div>
+</div>
+<!-- VOICE QUICK ADD -->
+<div class="ov" id="voiceQuickOv">
+<div class="voice-quick-mdl">
+  <div class="vq-pulse">🎙</div>
+  <div id="vqStatus" style="font-size:14px;font-weight:600;margin-bottom:8px">Слушаю...</div>
+  <div class="vq-hint" id="vqHint">Скажите: "Подготовить отчёт 25 мая в 14:00, срочно, напомни 24 мая в 21:00"</div>
+  <div class="vq-result" id="vqResult"></div>
+  <div class="vq-parsed" id="vqParsed"></div>
+  <div class="voice-btns" style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap">
+    <button class="vbtn vbtn-stop" onclick="vqStop()">⏹ Стоп</button>
+    <button class="vbtn vbtn-ok" id="vqOkBtn" onclick="vqApply()" style="display:none">✓ Создать</button>
+    <button class="vbtn vbtn-cancel" onclick="closeOv('voiceQuickOv')">Отмена</button>
+  </div>
+</div></div>
+<!-- ADD/EDIT TASK MODAL -->
+<div class="ov" id="addOv">
+<div class="mdl">
+  <div class="mdl-t" id="addTitle">Новая задача<button class="mclose" onclick="closeOv('addOv')">✕</button></div>
+  <div class="fg"><div class="fl" id="lName">Название</div><input class="fi" id="tName" placeholder="Что нужно сделать?"></div>
+  <div class="fg"><div class="fl" id="lDate">Дата</div><input class="fi" type="date" id="tDate"></div>
+  <div class="time-row">
+    <div class="fg"><div class="fl" id="lFrom">С</div><input class="fi" type="time" id="tTimeStart"></div>
+    <div class="fg"><div class="fl" id="lTo">До</div><input class="fi" type="time" id="tTimeEnd"></div>
+  </div>
+  <div class="fg"><div class="fl" id="lPrio">Приоритет</div>
+    <div class="prio-row">
+      <button class="pr on-low" id="pr_low" onclick="setPrio('low')">🟢 Низкий</button>
+      <button class="pr" id="pr_medium" onclick="setPrio('medium')">🟡 Средний</button>
+      <button class="pr" id="pr_urgent" onclick="setPrio('urgent')">🔴 Срочный</button>
+    </div>
+  </div>
+  <div class="fg"><div class="fl" id="lTags">Теги</div>
+    <div class="tag-select-grid" id="tagSelectGrid"></div>
+  </div>
+  <div class="fg">
+    <div class="subtasks-hdr">
+      <span class="subtasks-hdr-t" id="lSubs">Подзадачи</span>
+      <button class="add-sub-btn" onclick="addSubtask()">+ Добавить</button>
+    </div>
+    <div id="subtasksList"></div>
+  </div>
+  <div class="fg"><div class="fl" id="lRecur">Повтор</div><select class="fi" id="tRecur"><option value="">Не повторяется</option><option value="daily">Ежедневно</option><option value="weekdays">По будням (Пн–Пт)</option><option value="weekly">Еженедельно</option><option value="monthly">Ежемесячно</option></select></div>
+  <div class="fg"><div class="fl" id="lRemind">Напоминание</div><input class="fi" type="time" id="tRemind"></div>
+  <div class="fg"><div class="fl" id="lNote">Заметка</div><textarea class="fi" id="tNote" rows="2" style="resize:none"></textarea></div>
+  <div class="fg"><div class="fl" id="lAttach">Вложения</div>
+    <label class="attach-btn"><span>📎</span><span id="lAttachBtn">Прикрепить файл</span><input type="file" style="display:none" id="taskFileInput" onchange="addTaskAttachment(this)" multiple></label>
+    <div class="attach-list" id="taskAttachList" style="margin-top:6px"></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <button class="btn-p" style="flex:1" onclick="saveTask()" id="saveBtnTask">💾 Сохранить</button>
+    <button style="width:46px;padding:13px 0;border-radius:12px;background:var(--bg3);border:1px solid var(--brd);color:var(--txt2);font-size:16px;cursor:pointer" onclick="openVoice()" title="Голосовой ввод">🎙</button>
+  </div>
+  <button class="btn-d" id="delBtnTask" onclick="deleteTask()" style="display:none">🗑 Удалить задачу</button>
+</div></div>
+<!-- NOTE EDITOR OVERLAY -->
+<div class="note-ov" id="noteOv">
+<div class="note-mdl">
+  <div class="mdl-t" id="noteMdlTitle">Заметка<button class="mclose" onclick="closeOv('noteOv')">✕</button></div>
+  <div class="note-mdl-body">
+    <div class="fg"><input class="fi" id="nTitle" placeholder="Заголовок..."></div>
+    <div class="fg"><textarea class="fi note-ta" id="nText" rows="8" placeholder="Текст заметки..."></textarea></div>
+    <div class="note-voice-bar">
+      <button class="btn-voice-note" id="noteVoiceBtn" onclick="toggleNoteVoice()">🎙 Голос</button>
+      <span style="font-size:11px;color:var(--txt3)" id="noteVoiceStatus"></span>
+    </div>
+    <div>
+      <div class="fl" id="lNoteAttach" style="margin-bottom:6px">Вложения</div>
+      <div class="link-add-row">
+        <input class="link-add-input" id="noteLinkInput" placeholder="🔗 https://... (ссылка)">
+        <button class="link-add-btn" onclick="addNoteLink()">+ Добавить</button>
+      </div>
+      <label class="attach-area" id="noteAttachArea">
+        📎 Прикрепить файлы (фото, документы, аудио...)
+        <input type="file" id="noteFileInput" style="display:none" onchange="addNoteAttachment(this)" multiple>
+      </label>
+      <div class="attach-list" id="noteAttachList" style="margin-top:6px"></div>
+    </div>
+  </div>
+  <button class="btn-p" style="margin-top:4px" onclick="saveNote()">💾 Сохранить</button>
+  <button class="btn-d" id="noteDelBtn" onclick="deleteNote()" style="display:none">🗑 Удалить</button>
+</div></div>
+<!-- TAG EDITOR OVERLAY -->
+<div class="ov" id="tagOv">
+<div class="mdl">
+  <div class="mdl-t" id="tagMdlTitle">Новый тег<button class="mclose" onclick="closeOv('tagOv')">✕</button></div>
+  <div class="fg"><div class="fl">Название</div><input class="fi" id="tagNameInput" placeholder="Название тега..."></div>
+  <div class="fg"><div class="fl">Цвет</div>
+    <div class="color-grid" id="tagColorGrid"></div>
+    <div id="tagSelectedColor" style="font-size:11px;color:var(--txt3)"></div>
+  </div>
+  <button class="btn-p" onclick="saveTag()">💾 Сохранить тег</button>
+  <button class="btn-d" id="tagDelBtn" onclick="deleteTagCurrent()" style="display:none">🗑 Удалить тег</button>
+</div></div>
+<!-- ALERT MODAL -->
+<div class="ov" id="alertOv" style="align-items:center">
+<div class="alert-mdl">
+  <div class="alert-ico" id="alertIco">⏰</div>
+  <div class="alert-t" id="alertTitle">Задача начинается!</div>
+  <div class="alert-sub" id="alertSub"></div>
+  <div class="alert-btns">
+    <button class="alert-btn alert-btn-snz" onclick="snooze()">💤 +10 мин</button>
+    <button class="alert-btn alert-btn-ok" onclick="closeAlert()">✓ OK</button>
+  </div>
+</div></div>
+<!-- VOICE OVERLAY -->
+<div class="ov" id="voiceOv">
+<div class="voice-mdl">
+  <div class="voice-pulse">🎙</div>
+  <div class="voice-status" id="voiceStatus">Говорите...</div>
+  <div class="voice-result" id="voiceResult"></div>
+  <div class="voice-btns">
+    <button class="vbtn vbtn-stop" onclick="stopRec()">⏹ Стоп</button>
+    <button class="vbtn vbtn-ok" id="voiceOkBtn" onclick="applyVoice()" style="display:none">✓ Применить</button>
+    <button class="vbtn vbtn-cancel" onclick="closeOv('voiceOv')">Отмена</button>
+  </div>
+</div></div>
+<!-- SYNC PASSWORD MODAL -->
+<div class="ov" id="syncPwdOv" style="align-items:center">
+<div class="alert-mdl">
+  <div class="alert-t" id="syncPwdTitle">🔐 Пароль синхронизации</div>
+  <div class="alert-sub" id="syncPwdSub">Установите пароль для защиты данных</div>
+  <div class="fg" style="margin-bottom:10px"><input class="fi" id="syncPwdInput" type="password" placeholder="Пароль..." style="width:100%;padding:10px 12px;margin:0"></div>
+  <div class="alert-btns">
+    <button class="alert-btn alert-btn-snz" onclick="closeOv('syncPwdOv')">Отмена</button>
+    <button class="alert-btn alert-btn-ok" onclick="confirmSyncPassword()">✓ ОК</button>
+  </div>
+</div></div>
+<!-- HELP MODAL -->
+<div class="ov" id="helpOv" style="align-items:flex-start;overflow-y:auto">
+<div class="mdl" style="border-radius:20px 20px 0 0;max-height:95vh;overflow-y:auto">
+  <div class="mdl-t" id="helpMdlTitle">📖 Инструкция<button class="mclose" onclick="closeOv('helpOv')">✕</button></div>
+  <div class="lang-bar" style="margin-bottom:14px">
+    <button class="lb on" id="hl_ru" onclick="setHelpLang('ru')">RU</button>
+    <button class="lb" id="hl_en" onclick="setHelpLang('en')">EN</button>
+    <button class="lb" id="hl_uz" onclick="setHelpLang('uz')">UZ</button>
+  </div>
+  <div id="helpContent"></div>
+</div></div>
+</div>
 <script>
-  // ⚠️ ЗАМЕНИТЕ НА СВОЙ КОНФИГ FIREBASE
-  const firebaseConfig = {
-    apiKey: "AIzaSyA7ZxPyoOeTW7zheB5o6MaxH0-y5yGDksE",
-    authDomain: "peskov-app.firebaseapp.com",
-    projectId: "peskov-app",
-    storageBucket: "peskov-app.firebasestorage.app",
-    messagingSenderId: "113038228499",
-    appId: "1:113038228499:web:97cf60ebe0f92c6b32d3e6",
-    measurementId: "G-4JJZXQ0ELQ"
-  };
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+// ===== I18N =====
+const LANG={
+  ru:{
+    home:'Главная',cal:'Календарь',all:'Все',notes:'Заметки',setts:'Настройки',
+    noTasks:'Нет задач на этот день',inWork:'В работе',done:'Выполнено',
+    search:'Поиск задач...',saved:'✅ Сохранено',deleted:'Удалено',
+    noOverdue:'✅ Просроченных задач нет',
+    newNote:'Новая заметка',editNote:'Редактировать',noteSaved:'Заметка сохранена',noteDel:'Заметка удалена',
+    noNotes:'Нет заметок',noNotesHint:'Нажмите + чтобы создать',
+    recStart:'⏺ Запись',recStop:'⏹ Стоп',recPlay:'▶ Слушать',recSave:'Сохранить в заметку',
+    voiceOn:'🎙 Голос',voiceOff:'⏹ Стоп',
+    MN:['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
+    DN:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],
+    today:'Сегодня',tomorrow:'Завтра',
+    total:'Всего',doneS:'Выполнено',inWorkS:'В работе',urgentS:'Срочных',
+    checkOverdue:'Проверить невыполненные',
+    clearDone:'Очистить выполненные',help:'Инструкция',
+    notifHint:'Нажмите чтобы включить уведомления — нужно для будильника и напоминаний',
+    notifInfo:'<b>О напоминаниях:</b><br>Уведомления работают пока Chrome запущен. Для надёжных — не закрывайте браузер.',
+    recWidget:'Диктофон (запись встречи)',
+    focusWork:'Фокус',focusBreak:'Перерыв',focusDone:'Сессия завершена!',focusPomo:'помодоро',
+    subtasks:'Подзадачи',addSub:'+ Добавить',tags:'Теги',myTags:'Мои теги',addTag:'+ Новый тег',
+    statsTitle:'Статистика',streakLabel:'Дней подряд',weekLabel:'За неделю',
+    tagsSettings:'Управление тегами',
+    transcribing:'Расшифровка...',transcript:'Расшифровка',
+    noSpace:'⚠️ Мало места. Удалите старые вложения или заметки.',
+    taskAdded:'Задача создана',vqListening:'🔴 Слушаю...',vqReady:'Готово',
+    vqHint:'Скажите: «Подготовить отчёт 25 мая в 14:00, срочно, напомни 24 мая в 21:00»',
+    preview:'Просмотр',lName:'Название',lDate:'Дата',lFrom:'С',lTo:'До',lPrio:'Приоритет',
+    lRemind:'Напоминание',prioUrgent:'Срочный',prioMedium:'Средний',prioLow:'Низкий',
+    themeLabel:'Тема',themeDark:'Тёмная',themeLight:'Светлая',themeEmerald:'Изумрудная',
+    inProgress:'В работе',urgent:'Срочный',cancel:'Отмена',ok:'OK',save:'Сохранить',
+    delete:'Удалить',edit:'Изменить',voice:'Голос',voiceTooltip:'Голосовой ввод',newTask:'Новая задача',myStats:'Моя статистика',recordWidget:'Диктофон',
+    attach:'Вложения',attachHint:'Прикрепить файлы',
+  },
+  en:{
+    home:'Home',cal:'Calendar',all:'All',notes:'Notes',setts:'Settings',
+    noTasks:'No tasks for this day',inWork:'In progress',done:'Done',
+    search:'Search tasks...',saved:'✅ Saved',deleted:'Deleted',
+    noOverdue:'✅ No overdue tasks',
+    newNote:'New note',editNote:'Edit note',noteSaved:'Note saved',noteDel:'Note deleted',
+    noNotes:'No notes yet',noNotesHint:'Tap + to create one',
+    recStart:'⏺ Record',recStop:'⏹ Stop',recPlay:'▶ Play',recSave:'Save as note',
+    voiceOn:'🎙 Voice',voiceOff:'⏹ Stop',
+    MN:['January','February','March','April','May','June','July','August','September','October','November','December'],
+    DN:['Mo','Tu','We','Th','Fr','Sa','Su'],
+    today:'Today',tomorrow:'Tomorrow',
+    total:'Total',doneS:'Done',inWorkS:'In progress',urgentS:'Urgent',
+    checkOverdue:'Check overdue',expCal:'Export to Google Calendar (.ics)',
+    clearDone:'Clear done',help:'Guide',
+    notifHint:'Tap to enable notifications for alarms and reminders',
+    notifInfo:'<b>About reminders:</b><br>Notifications work while Chrome is open.',
+    recWidget:'Recorder (meeting recording)',
+    focusWork:'Focus',focusBreak:'Break',focusDone:'Session done!',focusPomo:'pomodoro',
+    subtasks:'Subtasks',addSub:'+ Add',tags:'Tags',myTags:'My Tags',addTag:'+ New tag',
+    statsTitle:'Statistics',streakLabel:'Day streak',weekLabel:'This week',
+    tagsSettings:'Tag management',
+    transcribing:'Transcribing...',transcript:'Transcript',
+    noSpace:'⚠️ Storage full. Delete old attachments or notes.',
+    taskAdded:'Task created',vqListening:'🔴 Listening...',vqReady:'Ready',
+    vqHint:'Say: "Prepare report on May 25 at 14:00, urgent, remind me May 24 at 21:00"',
+    preview:'Preview',lName:'Name',lDate:'Date',lFrom:'From',lTo:'To',lPrio:'Priority',
+    lRemind:'Reminder',prioUrgent:'Urgent',prioMedium:'Medium',prioLow:'Low',
+    themeLabel:'Theme',themeDark:'Dark',themeLight:'Light',themeEmerald:'Emerald',
+    inProgress:'In progress',urgent:'Urgent',cancel:'Cancel',ok:'OK',save:'Save',
+    delete:'Delete',edit:'Edit',voice:'Voice',voiceTooltip:'Voice input',newTask:'New task',myStats:'My statistics',recordWidget:'Recorder',
+    attach:'Attachments',attachHint:'Attach files',
+  },
+  uz:{
+    home:'Asosiy',cal:'Kalendar',all:'Barchasi',notes:'Eslatmalar',setts:'Sozlamalar',
+    noTasks:'Bu kun vazifalar yoq',inWork:'Jarayonda',done:'Bajarildi',
+    search:'Qidirish...',saved:'✅ Saqlandi',deleted:'Ochirildi',
+    noOverdue:'✅ Muddati otgan vazifalar yoq',
+    newNote:'Yangi eslatma',editNote:'Tahrirlash',noteSaved:'Eslatma saqlandi',noteDel:'Eslatma ochirildi',
+    noNotes:'Eslatmalar yoq',noNotesHint:'Yaratish uchun + bosing',
+    recStart:'⏺ Yozish',recStop:'⏹ Toxtatish',recPlay:'▶ Tinglash',recSave:'Eslatmaga saqlash',
+    voiceOn:'🎙 Ovoz',voiceOff:'⏹ Toxtatish',
+    MN:['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'],
+    DN:['Du','Se','Ch','Pa','Ju','Sh','Ya'],
+    today:'Bugun',tomorrow:'Ertaga',
+    total:'Jami',doneS:'Bajarildi',inWorkS:'Jarayonda',urgentS:'Shoshilinch',
+    checkOverdue:'Bajarilmaganlarni tekshirish',expCal:'Google Calendarga eksport (.ics)',
+    clearDone:'Bajarilganlarni tozalash',help:'Qollanma',
+    notifHint:'Bildirishnomalarni yoqish uchun bosing',
+    notifInfo:'<b>Eslatmalar:</b><br>Chrome ochiq bolganda ishlaydi.',
+    recWidget:'Diktofon (uchrashuv yozuvi)',
+    focusWork:'Fokus',focusBreak:'Tanaffus',focusDone:'Sessiya tugadi!',focusPomo:'pomodoro',
+    subtasks:'Kichik vazifalar',addSub:'+ Qoshish',tags:'Teglar',myTags:'Mening teglarim',addTag:'+ Yangi teg',
+    statsTitle:'Statistika',streakLabel:'Ketma-ket kunlar',weekLabel:'Bu hafta',
+    tagsSettings:'Teglarni boshqarish',
+    transcribing:'Transkripsiya...',transcript:'Transkripsiya',
+    noSpace:'⚠️ Xotira yetarli emas. Eski fayllarni oching.',
+    taskAdded:'Vazifa yaratildi',vqListening:'🔴 Tinglayapman...',vqReady:'Tayyor',
+    vqHint:'Ayting: "25-may soat 14:00 da hisobotni tayyorlash, shoshilinch"',
+    preview:'Korish',lName:'Nomi',lDate:'Sana',lFrom:'Dan',lTo:'Gacha',lPrio:'Muhimligi',
+    lRemind:'Eslatma',prioUrgent:'Shoshilinch',prioMedium:'Orta',prioLow:'Past',
+    themeLabel:'Mavzu',themeDark:'Qora',themeLight:'Oq',themeEmerald:'Zumradli',
+    inProgress:'Jarayonda',urgent:'Shoshilinch',cancel:'Bekor qilish',ok:'OK',save:'Saqlash',
+    delete:'Ochirish',edit:'Tahrirlash',voice:'Ovoz',voiceTooltip:'Ovozli kiritish',newTask:'Yangi vazifa',myStats:'Statistika',recordWidget:'Diktofon',
+    attach:'Ilovalar',attachHint:'Fayl biriktirish',
+  }
+};
+function t(k){return(LANG[lang]||LANG.ru)[k]||k;}
 
-  // ---------- ПЕРЕВОДЫ ----------
-  const translations = {
-    ru: {
-      taskLabel:"📌 Задача", startLabel:"🕘 Начало", endLabel:"🕔 Конец", priorityLabel:"⚡ Важность",
-      addBtn:"➕ Добавить", dateLabel:"📅 Дата задачи", filterLabel:"⭐ Фильтр",
-      filterAll:"Все", filterHigh:"Высокие", filterMid:"Средние", filterLow:"Низкие",
-      tomorrowTitle:"📅 Завтра", afterTitle:"📆 Послезавтра", searchLabel:"🔍 Поиск по задачам",
-      tasksHeading:"📋 Задачи на ", statsTitle:"📊 КПД (коэффициент полезного действия)",
-      totalLabel:"📋 Всего", completedLabel:"✅ Выполнено", progressLabel:"📈 Прогресс",
-      footerNote:"🔔 Уведомления за день и утро. Срочные — красное окно + звук.",
-      noTasks:"✨ Нет задач", noTasksUpcoming:"✅ Нет задач",
-      reschedTitle:"📅 Перенос задачи", newDate:"Новая дата:", newStart:"Время начала:", newEnd:"Время окончания:",
-      reasonPlaceholder:"Например: срочные работы...", confirmResched:"✅ Перенести", cancel:"Отмена",
-      urgentTitle:"🚨 СРОЧНАЯ ЗАДАЧА!", understood:"Понятно",
-      toastRescheduled:"Задача перенесена на ", toastDayBefore:"Завтра: ", toastToday:"Сегодня в ",
-      completeBtn:"✓ Выполнено", undoBtn:"↺ Вернуть", reschedBtn:"Перенести", deleteBtn:"Удалить",
-      remaining:"Осталось", reasonLabel:"Причина переноса:",
-      screenshotBtn:"📸 Снимок экрана", importBtn:"📂 Импорт", installBtn:"📲 Установить",
-      currentMonthStat:"Текущий месяц", prevMonthStat:"Прошлый месяц",
-      taskPlaceholder:"Что сделать?", searchPlaceholder:"Название..."
-    },
-    en: {
-      taskLabel:"📌 Task", startLabel:"🕘 Start", endLabel:"🕔 End", priorityLabel:"⚡ Priority",
-      addBtn:"➕ Add", dateLabel:"📅 Date", filterLabel:"⭐ Filter",
-      filterAll:"All", filterHigh:"High", filterMid:"Medium", filterLow:"Low",
-      tomorrowTitle:"📅 Tomorrow", afterTitle:"📆 Day after", searchLabel:"🔍 Search",
-      tasksHeading:"📋 Tasks for ", statsTitle:"📊 Efficiency",
-      totalLabel:"📋 Total", completedLabel:"✅ Done", progressLabel:"📈 Progress",
-      footerNote:"🔔 Daily alerts. Urgent = red popup + sound.",
-      noTasks:"✨ No tasks", noTasksUpcoming:"✅ No tasks",
-      reschedTitle:"📅 Reschedule", newDate:"New date:", newStart:"Start time:", newEnd:"End time:",
-      reasonPlaceholder:"e.g., urgent work...", confirmResched:"✅ Reschedule", cancel:"Cancel",
-      urgentTitle:"🚨 URGENT TASK!", understood:"OK",
-      toastRescheduled:"Task moved to ", toastDayBefore:"Tomorrow: ", toastToday:"Today at ",
-      completeBtn:"✓ Done", undoBtn:"↺ Undo", reschedBtn:"Reschedule", deleteBtn:"Delete",
-      remaining:"Remaining", reasonLabel:"Reason:",
-      screenshotBtn:"📸 Screenshot", importBtn:"📂 Import", installBtn:"📲 Install",
-      currentMonthStat:"Current month", prevMonthStat:"Prev. month",
-      taskPlaceholder:"What to do?", searchPlaceholder:"Title..."
-    },
-    uz: {
-      taskLabel:"📌 Vazifa", startLabel:"🕘 Boshi", endLabel:"🕔 Tugashi", priorityLabel:"⚡ Muhimlik",
-      addBtn:"➕ Qoʻshish", dateLabel:"📅 Sana", filterLabel:"⭐ Filtr",
-      filterAll:"Hammasi", filterHigh:"Yuqori", filterMid:"Oʻrta", filterLow:"Past",
-      tomorrowTitle:"📅 Ertaga", afterTitle:"📆 Indinga", searchLabel:"🔍 Qidiruv",
-      tasksHeading:"📋 Vazifalar: ", statsTitle:"📊 Samaradorlik",
-      totalLabel:"📋 Jami", completedLabel:"✅ Bajarilgan", progressLabel:"📈 Natija",
-      footerNote:"🔔 Ertalabki eslatmalar. Shoshilinch — qizil oyna.",
-      noTasks:"✨ Vazifalar yoʻq", noTasksUpcoming:"✅ Vazifalar yoʻq",
-      reschedTitle:"📅 Koʻchirish", newDate:"Yangi sana:", newStart:"Vaqt boshi:", newEnd:"Vaqt oxiri:",
-      reasonPlaceholder:"Masalan: ish...", confirmResched:"✅ Koʻchirish", cancel:"Bekor",
-      urgentTitle:"🚨 SHOSHILINCH VAZIFA!", understood:"Tushundim",
-      toastRescheduled:"Vazifa koʻchirildi: ", toastDayBefore:"Ertaga: ", toastToday:"Bugun soat ",
-      completeBtn:"✓ Bajarildi", undoBtn:"↺ Qaytar", reschedBtn:"Koʻchir", deleteBtn:"Oʻchir",
-      remaining:"Qoldi", reasonLabel:"Sababi:",
-      screenshotBtn:"📸 Rasm", importBtn:"📂 Import", installBtn:"📲 Oʻrnatish",
-      currentMonthStat:"Joriy oy", prevMonthStat:"Oʻtgan oy",
-      taskPlaceholder:"Nima qilish kerak?", searchPlaceholder:"Sarlavha..."
-    }
-  };
+// ===== STATE =====
+let tasks=[];
+let notes=[];
+let tags=[];
+let selDate=new Date();
+let tab=0;
+let lang=localStorage.getItem('pp_lang')||'ru';
+let theme=localStorage.getItem('pp_theme')||'dark';
+let prio='low';
+let editId=null;
+let editNoteId=null;
+let editTagId=null;
+let editSubtasks=[];
+let editTagColor='#3d4fd4';
+let editTaskTags=[];
+let editAttachments=[];
+let noteEditAttachments=[];
+let tagFilter=null;
+let searchQ='';
+let calYear=new Date().getFullYear();
+let calMonth=new Date().getMonth();
+// Focus timer
+let focusTaskId=null;
+let focusSecs=0;
+let focusPaused=false;
+let focusInterval=null;
+let focusIsBreak=false;
+let focusPomoCnt=0;
+const FOCUS_WORK=25*60;
+const FOCUS_BREAK=5*60;
+// Reminders
+let alertQueue=[];
+let alertTaskId=null;
+let notified=new Set(JSON.parse(localStorage.getItem('pp_notified')||'[]'));
+let reminderTimers=[];
+let audioCtx=null;
+let alarmInterval=null;
+// Voice (task)
+let rec=null;
+let recOn=false;
+let recSilenceTimer=null;
+let voiceText='';
+// Voice (note)
+let noteRecOn=false;
+let noteSpeech=null;
+// Dictaphone
+let dictRec=null;
+let dictBlob=null;
+let dictAudioURL=null;
+let dictAudio=null;
+let dictOn=false;
+let dictTimer=null;
+let dictSecs=0;
+let dictSpeech=null;
+let dictTranscript='';
 
-  let currentLang = 'ru';
-  let tasks = [];
-  let currentDate = new Date().toISOString().slice(0,10);
-  let filterPriority = 'all';
-  let currentUser = null;
-  let chartInstances = { cur: null, prev: null };
-  let currentCalendarMonth = new Date();
-  let unsubscribeTasks = null;
+// ===== DEFAULT TAGS =====
+const TAG_COLORS=['#3d4fd4','#10b981','#f59e0b','#ef4444','#7c3aed','#ec4899','#0ea5e9','#f97316','#84cc16','#06b6d4'];
+const DEFAULT_TAGS=[
+  {id:'t_work',name:'Работа',color:'#3d4fd4'},
+  {id:'t_personal',name:'Личное',color:'#10b981'},
+  {id:'t_health',name:'Здоровье',color:'#f59e0b'},
+  {id:'t_pr',name:'PR',color:'#7c3aed'},
+];
 
-  // DOM-элементы
-  const authContainer = document.getElementById('authContainer');
-  const appContainer = document.getElementById('appContainer');
-  const authForm = document.getElementById('authForm');
-  const authEmail = document.getElementById('authEmail');
-  const authPassword = document.getElementById('authPassword');
-  const authError = document.getElementById('authError');
-  const authBtn = document.getElementById('authBtn');
-  const toggleAuthMode = document.getElementById('toggleAuthMode');
-  const logoutBtn = document.getElementById('logoutBtn');
+// ===== PERSISTENCE =====
+function save(){localStorage.setItem('pp_tasks',JSON.stringify(tasks));}
+function load(){tasks=JSON.parse(localStorage.getItem('pp_tasks')||'[]');}
 
-  const selectedDateInput = document.getElementById('selectedDate');
-  const selectedDateLabelSpan = document.getElementById('selectedDateLabel');
-  const tasksContainer = document.getElementById('tasksContainer');
-  const addBtn = document.getElementById('addTaskBtn');
-  const taskTitle = document.getElementById('taskTitle');
-  const startTimeInput = document.getElementById('startTime');
-  const endTimeInput = document.getElementById('endTime');
-  const taskPrioritySelect = document.getElementById('taskPriority');
-  const filterSelect = document.getElementById('filterPriority');
-  const searchInput = document.getElementById('searchTasks');
+function saveNotes(){
+  // Strip large base64 data from attachments before saving metadata to localStorage
+  // Actual file blobs live in IndexedDB
+  const slim=notes.map(n=>({...n,attachments:(n.attachments||[]).map(({id,name,type,size,created})=>({id,name,type,size,created}))}));
+  try{localStorage.setItem('pp_notes',JSON.stringify(slim));}
+  catch(e){if(e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED')showToast(t('noSpace'));}
+}
+function loadNotes(){notes=JSON.parse(localStorage.getItem('pp_notes')||'[]');}
 
-  let isLoginMode = true;
+function saveTags(){localStorage.setItem('pp_tags',JSON.stringify(tags));}
+function loadTags(){
+  const stored=localStorage.getItem('pp_tags');
+  tags=stored?JSON.parse(stored):[...DEFAULT_TAGS];
+}
 
-  // ========== Аутентификация ==========
-  authForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const email = authEmail.value.trim();
-    const password = authPassword.value.trim();
-    if (!email || !password) return;
-    authError.textContent = '';
-    const action = isLoginMode
-      ? auth.signInWithEmailAndPassword(email, password)
-      : auth.createUserWithEmailAndPassword(email, password);
-    action.catch(error => {
-      authError.textContent = error.message;
-    });
+function saveStats(){
+  const h=JSON.parse(localStorage.getItem('pp_hist')||'{}');
+  const d=fmt(new Date());
+  h[d]={done:tasks.filter(tk=>tk.done&&tk.date===d).length,total:tasks.filter(tk=>tk.date===d).length};
+  localStorage.setItem('pp_hist',JSON.stringify(h));
+}
+function getHistory(){return JSON.parse(localStorage.getItem('pp_hist')||'{}')}
+
+
+// ===== INDEXEDDB (file storage — no size limit) =====
+let idb = null;
+function openIDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open('peskov_files',1);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains('att'))db.createObjectStore('att',{keyPath:'id'});
+    };
+    req.onsuccess=e=>{idb=e.target.result;res(idb);};
+    req.onerror=()=>rej(req.error);
   });
-
-  toggleAuthMode.addEventListener('click', () => {
-    isLoginMode = !isLoginMode;
-    authBtn.textContent = isLoginMode ? 'Войти' : 'Зарегистрироваться';
-    toggleAuthMode.textContent = isLoginMode
-      ? 'Нет аккаунта? Зарегистрироваться'
-      : 'Уже есть аккаунт? Войти';
-    authError.textContent = '';
+}
+function idbPut(id,blob){
+  return new Promise((res,rej)=>{
+    if(!idb){res();return;}
+    const tx=idb.transaction('att','readwrite');
+    tx.objectStore('att').put({id,data:blob});
+    tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);
   });
+}
+function idbGet(id){
+  return new Promise((res,rej)=>{
+    if(!idb){res(null);return;}
+    const tx=idb.transaction('att','readonly');
+    const req=tx.objectStore('att').get(id);
+    req.onsuccess=()=>res(req.result?req.result.data:null);
+    req.onerror=()=>rej(req.error);
+  });
+}
+function idbDel(id){
+  return new Promise((res,rej)=>{
+    if(!idb){res();return;}
+    const tx=idb.transaction('att','readwrite');
+    tx.objectStore('att').delete(id);
+    tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);
+  });
+}
 
-  logoutBtn.addEventListener('click', () => auth.signOut());
+// ===== UTILITIES =====
+function fmt(d){return d.toISOString().slice(0,10);}
+function today(){return fmt(new Date());}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtSecs(s){return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0');}
+function fmtSize(bytes){if(bytes<1024)return bytes+'B';if(bytes<1048576)return(bytes/1024).toFixed(1)+'KB';return(bytes/1048576).toFixed(1)+'MB';}
+function fmtDisp(str){
+  const d=new Date(str+'T12:00:00');
+  return d.toLocaleDateString(lang==='en'?'en-GB':'ru-RU',{day:'numeric',month:'long'});
+}
+function fmtNoteDate(iso){
+  if(!iso)return'';
+  const d=new Date(iso);
+  return d.toLocaleDateString(lang==='en'?'en-GB':'ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+function showToast(msg){
+  const el=document.getElementById('toast');
+  if(!el)return;
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2800);
+}
+function fileIcon(type){
+  if(!type)return '📎';
+  if(type.startsWith('image/'))return '🖼';
+  if(type.startsWith('audio/'))return '🎵';
+  if(type.startsWith('video/'))return '🎬';
+  if(type.includes('pdf'))return '📄';
+  if(type.includes('word')||type.includes('document'))return '📝';
+  if(type.includes('sheet')||type.includes('excel'))return '📊';
+  return '📎';
+}
 
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      currentUser = user;
-      authContainer.classList.add('hidden');
-      appContainer.classList.remove('hidden');
-      subscribeToTasks();
-      setupUI();
+
+// ===== THEME & LANG =====
+function setTheme(th){
+  theme=th;localStorage.setItem('pp_theme',th);
+  document.documentElement.setAttribute('data-theme',th==='dark'?'':th);
+  const labels={dark:t('themeDark'),light:t('themeLight'),emerald:t('themeEmerald')};
+  const el=document.getElementById('themeBtnLabel');if(el)el.textContent=labels[th]||t('themeLabel');
+  ['dark','light','emerald'].forEach(x=>{const o=document.getElementById('topt_'+x);if(o)o.classList.toggle('on',x===th);});
+}
+function toggleThemeDrop(){
+  const btn=document.getElementById('themeBtn'),drop=document.getElementById('themeDrop');
+  if(!btn||!drop)return;
+  const open=drop.classList.toggle('open');
+  if(open){const close=e=>{if(!document.getElementById('themeWrap').contains(e.target)){drop.classList.remove('open');document.removeEventListener('click',close);}};setTimeout(()=>document.addEventListener('click',close),0);}
+}
+function setLang(l){
+  lang=l;localStorage.setItem('pp_lang',l);
+  ['ru','en','uz'].forEach(x=>{const b=document.getElementById('lb_'+x);if(b)b.classList.toggle('on',x===l);});
+  // Re-apply theme labels
+  setTheme(theme);
+  // Update help link/title
+  ['dark','light','emerald'].forEach(x=>{const e=document.getElementById('topt_'+x+'_lbl');if(e)e.textContent=t('theme'+x.charAt(0).toUpperCase()+x.slice(1));});
+  localizeLabels();renderDstrip();renderAll();
+}
+function setTab(n){
+  tab=n;
+  [0,1,2,3,4].forEach(i=>document.getElementById('n'+i).classList.toggle('on',i===n));
+  const sw=document.getElementById('stripWrap');
+  if(sw)sw.style.display=n===1?'none':'block';
+  renderAll();
+}
+function updateNav(){
+  const vf=document.getElementById('voiceFab');
+  if(vf)vf.style.display=(tab===0||tab===2||tab===3)?'flex':'none';
+
+  const nl=[t('home'),t('cal'),t('all'),t('notes'),t('setts')];
+  [0,1,2,3,4].forEach(i=>{const el=document.getElementById('nl'+i);if(el)el.textContent=nl[i];});
+  const fab=document.getElementById('mainFab');if(fab)fab.textContent='+';
+}
+function openFab(){if(tab===3)openNewNote();else if(tab===4)openTagEditor();else openAdd();}
+
+// ===== DATE STRIP =====
+function renderDstrip(){
+  const DN=t('DN');
+  const strip=document.getElementById('dstrip');if(!strip)return;
+  strip.innerHTML='';
+  const base=new Date();base.setDate(base.getDate()-3);
+  for(let i=0;i<25;i++){
+    const d=new Date(base);d.setDate(base.getDate()+i);
+    const ds=fmt(d);
+    const dow=(d.getDay()+6)%7;
+    const hasTasks=tasks.some(tk=>tk.date===ds);
+    const isOn=fmt(selDate)===ds;
+    const el=document.createElement('div');
+    el.className='ditem'+(isOn?' on':'');
+    el.innerHTML=`<span class="ditem-d">${DN[dow]}</span><span class="ditem-n">${d.getDate()}</span>${hasTasks?'<span class="ditem-dot"></span>':''}`;
+    el.onclick=()=>{selDate=d;tab=0;setTab(0);};
+    strip.appendChild(el);
+    if(isOn)setTimeout(()=>el.scrollIntoView({inline:'center',behavior:'smooth'}),50);
+  }
+  const isT=fmt(selDate)===today();
+  const isTom=fmt(selDate)===fmt(new Date(new Date().setDate(new Date().getDate()+1)));
+  const dl=document.getElementById('dayLabel');
+  if(dl)dl.textContent=isT?t('today'):isTom?t('tomorrow'):fmtDisp(fmt(selDate));
+}
+function shiftWeek(dir){
+  selDate=new Date(selDate);selDate.setDate(selDate.getDate()+dir*7);
+  renderDstrip();renderAll();
+}
+
+// ===== TASK CARD =====
+function getTag(id){return tags.find(tg=>tg.id===id);}
+function tagChipHtml(tagId){
+  const tg=getTag(tagId);if(!tg)return'';
+  const light=hexLighter(tg.color);
+  return`<span class="tag-chip" style="background:${light};color:${tg.color}">${escHtml(tg.name)}</span>`;
+}
+function hexLighter(hex){
+  // return rgba with low alpha for background
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return`rgba(${r},${g},${b},0.15)`;
+}
+function taskCard(tk,showDate){
+  const isDone=tk.done||tk.status==='moved';
+  const rLbl={daily:'↺Ежд',weekdays:'↺Буд',weekly:'↺Нед',monthly:'↺Мес'};
+  const pbc=tk.priority==='urgent'?'pb-urgent':tk.priority==='medium'?'pb-medium':'pb-low';
+  const pbl=tk.priority==='urgent'?'🔴':tk.priority==='medium'?'🟡':'🟢';
+  const tagHtml=(tk.tags||[]).map(tagChipHtml).join('');
+  const subTotal=(tk.subtasks||[]).length;
+  const subDone=(tk.subtasks||[]).filter(s=>s.done).length;
+  const subPct=subTotal>0?Math.round(subDone/subTotal*100):0;
+  const subHtml=subTotal>0?`<div class="tc-subtasks-bar">
+    <div class="sub-progress-wrap"><div class="sub-progress-fill" style="width:${subPct}%"></div></div>
+    <div class="sub-progress-text">${subDone}/${subTotal} ${t('subtasks').toLowerCase()}</div></div>`:'';
+  return`<div class="task-card prio-${tk.priority}${isDone?' done-card':''}" onclick="openEdit('${tk.id}')">
+    <div class="tc-row">
+      <div class="tc-check${isDone?' done-check':''}" onclick="event.stopPropagation();toggleTask('${tk.id}')">${isDone?'✓':''}</div>
+      <div class="tc-body">
+        <div class="tc-name${isDone?' crossed':''}">${escHtml(tk.name)}</div>
+        <div class="tc-meta">
+          ${tk.timeStart?`<span>⏰ ${tk.timeStart}${tk.timeEnd?'–'+tk.timeEnd:''}${showDate&&tk.date?' '+fmtShortDate(tk.date):''}</span>`:showDate&&tk.date?`<span>📅 ${fmtShortDate(tk.date)}</span>`:''}${tk.recurrence?`<span class="recur-badge">${rLbl[tk.recurrence]||''}</span>`:''}
+          <span class="prio-badge ${pbc}">${pbl} ${tk.priority==='urgent'?t('prioUrgent'):tk.priority==='medium'?t('prioMedium'):''}</span>
+        </div>
+        ${tagHtml?`<div class="tc-tags">${tagHtml}</div>`:''}
+        ${subHtml}
+      </div>
+    </div>
+
+  </div>`;
+}
+
+// ===== RENDER FUNCTIONS =====
+function renderList(list){
+  const pend=list.filter(tk=>!tk.done&&tk.status!=='moved');
+  const dn=list.filter(tk=>tk.done||tk.status==='moved');
+  if(!list.length)return`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">${t('noTasks')}</div></div>`;
+  let h='';
+  if(pend.length)h+=`<div class="sec-hdr"><span class="sec-t">${t('inWork')}</span><span class="sec-c">${pend.length}</span></div>`+pend.map(taskCard).join('');
+  if(dn.length)h+=`<div class="sec-hdr" style="margin-top:14px"><span class="sec-t">${t('done')}</span><span class="sec-c">${dn.length}</span></div>`+dn.map(taskCard).join('');
+  return h;
+}
+
+function renderHome(){
+  let h='';
+  if(focusTaskId)h+=renderFocusBar();
+  h+=renderList(tasks.filter(tk=>tk.date===fmt(selDate)));
+  document.getElementById('main').innerHTML=h;
+}
+
+function renderAllTasks(){
+  let list=[...tasks];
+  if(searchQ)list=list.filter(tk=>tk.name.toLowerCase().includes(searchQ)||((tk.note||'').toLowerCase().includes(searchQ)));
+  if(tagFilter)list=list.filter(tk=>(tk.tags||[]).includes(tagFilter));
+  list.sort((a,b)=>a.date.localeCompare(b.date));
+  const tasksHtml=list.length?renderListWithDate(list):`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">${t('noTasks')}</div></div>`;
+  // Build tag filter bar
+  const filterBar=`<div class="tag-filter-bar">
+    <button class="tfbtn${!tagFilter?' active':''}" style="${!tagFilter?'border-color:var(--acc);color:var(--acc)':''}" onclick="setTagFilter(null)">Все</button>
+    ${tags.map(tg=>`<button class="tfbtn${tagFilter===tg.id?' active':''}" style="${tagFilter===tg.id?`border-color:${tg.color};color:${tg.color}`:'background:'+hexLighter(tg.color)+';color:'+tg.color}" onclick="setTagFilter('${tg.id}')">${escHtml(tg.name)}</button>`).join('')}
+  </div>`;
+  document.getElementById('main').innerHTML=`
+    ${focusTaskId?renderFocusBar():''}
+    <div class="search-box"><span class="search-ico">🔍</span><input placeholder="${t('search')}" value="${escHtml(searchQ)}" oninput="searchQ=this.value.toLowerCase();renderAllTasks()"></div>
+    ${filterBar}
+    ${tasksHtml}`;
+}
+function setTagFilter(id){tagFilter=id;renderAllTasks();}
+
+function renderCal(){
+  const MN=t('MN');const DN=t('DN');
+  const days_in=new Date(calYear,calMonth+1,0).getDate();
+  const first_dow=(new Date(calYear,calMonth,1).getDay()+6)%7;
+  let h=`<div class="cal-hdr"><button class="cal-navbtn" onclick="shiftCal(-1)">‹</button><span class="cal-m">${MN[calMonth]} ${calYear}</span><button class="cal-navbtn" onclick="shiftCal(1)">›</button></div>
+  <div class="cal-grid">${DN.map(d=>`<div class="cal-d">${d}</div>`).join('')}`;
+  for(let i=0;i<first_dow;i++)h+='<div></div>';
+  for(let d=1;d<=days_in;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isT=ds===today();const isSel=ds===fmt(selDate);
+    const hasTasks=tasks.some(tk=>tk.date===ds);
+    h+=`<div class="cal-cell${isT?' today':''}${isSel?' selected':''}${hasTasks?' has-task':''}" onclick="calClick('${ds}')">${d}</div>`;
+  }
+  h+='</div>';
+  h+=renderList(tasks.filter(tk=>tk.date===fmt(selDate)));
+  document.getElementById('main').innerHTML=h;
+}
+function shiftCal(d){calMonth+=d;if(calMonth<0){calMonth=11;calYear--;}if(calMonth>11){calMonth=0;calYear++;}renderCal();}
+function calClick(ds){selDate=new Date(ds+'T12:00:00');tab=0;setTab(0);}
+
+function renderSets(){
+  const tot=tasks.length,dn=tasks.filter(tk=>tk.done).length,urg=tasks.filter(tk=>tk.priority==='urgent'&&!tk.done).length;
+  const nb=Notification.permission!=='granted'?`<div class="notif-banner" onclick="requestNotifPerm()">🔔 ${t('notifHint')}</div>`:'';
+  const hist=getHistory();
+  const today_s=today();
+  // Streak calc
+  let streak=0,d2=new Date();
+  while(true){const ds=fmt(d2);const h=hist[ds];if(h&&h.done>0){streak++;d2.setDate(d2.getDate()-1);}else break;}
+  // Week stats
+  const weekDays=[];for(let i=6;i>=0;i--){const d3=new Date();d3.setDate(d3.getDate()-i);weekDays.push(d3);}
+  const maxDone=Math.max(1,...weekDays.map(d3=>(hist[fmt(d3)]||{done:0}).done));
+  const barHtml=weekDays.map(d3=>{
+    const ds=fmt(d3);const hd=(hist[ds]||{done:0,total:0});
+    const pct=hd.done>0?Math.round(hd.done/maxDone*100):3;
+    const dn2=t('DN')[(d3.getDay()+6)%7];
+    return`<div class="bar-col"><div class="bar-val-t">${hd.done||''}</div><div class="bar-fill" style="height:${pct}%"></div><div class="bar-day">${dn2}</div></div>`;
+  }).join('');
+  // Streak calendar (last 30 days)
+  const streakCells=Array.from({length:30},(_,i)=>{const d3=new Date();d3.setDate(d3.getDate()-29+i);const ds=fmt(d3);const hd=hist[ds]||{};const cls=hd.done>0?(hd.done>=(hd.total||1)?'s-full':'s-part'):'';return`<div class="streak-day ${cls}">${d3.getDate()}</div>`;}).join('');
+  const weekDone=weekDays.reduce((a,d3)=>a+(hist[fmt(d3)]||{done:0}).done,0);
+  const weekTot=weekDays.reduce((a,d3)=>a+(hist[fmt(d3)]||{total:0}).total,0);
+  const weekPct=weekTot>0?Math.round(weekDone/weekTot*100):0;
+  document.getElementById('main').innerHTML=`
+    ${nb}
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-n">${tot}</div><div class="stat-l">${t('total')}</div></div>
+      <div class="stat-card"><div class="stat-n" style="color:var(--grn)">${dn}</div><div class="stat-l">${t('doneS')}</div></div>
+      <div class="stat-card"><div class="stat-n" style="color:var(--ylw)">${tot-dn}</div><div class="stat-l">${t('inWorkS')}</div></div>
+      <div class="stat-card"><div class="stat-n" style="color:var(--red)">${urg}</div><div class="stat-l">${t('urgentS')}</div></div>
+    </div>
+    <div class="stats-grid" style="margin-bottom:12px">
+      <div class="stat-card"><div class="stat-n" style="color:var(--ylw)">🔥 ${streak}</div><div class="stat-l">${t('streakLabel')}</div></div>
+      <div class="stat-card"><div class="stat-n" style="color:var(--acc)">${weekPct}%</div><div class="stat-l">${t('weekLabel')}</div></div>
+    </div>
+    <div class="bar-chart-box">
+      <div class="bar-chart-title">${t('statsTitle')}</div>
+      <div class="bar-row">${barHtml}</div>
+    </div>
+    <div class="streak-box">
+      <div class="streak-title">Активность (30 дней)</div>
+      <div class="streak-row">${streakCells}</div>
+    </div>
+    ${syncCardHtml()}
+    <div style="background:var(--bg2);border-radius:var(--r);overflow:hidden;margin-bottom:10px">
+      <div class="srow" onclick="checkOverdue()"><span class="srow-ico">⚠️</span><span class="srow-lbl">${t('checkOverdue')}</span><span>›</span></div>
+      <div class="srow" onclick="setTab(3);setTimeout(()=>openTagEditor(),100)"><span class="srow-ico">🏷</span><span class="srow-lbl">${t('tagsSettings')}</span><span>›</span></div>
+
+      <div class="srow" onclick="clearDone()"><span class="srow-ico">🗑</span><span class="srow-lbl">${t('clearDone')}</span><span>›</span></div>
+      <div class="srow" onclick="openHelp()"><span class="srow-ico">📖</span><span class="srow-lbl">${t('help')}</span><span>›</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--txt3);padding:10px;background:var(--bg2);border-radius:var(--r)">${t('notifInfo')}</div>`;
+}
+
+function renderAll(){
+  if(tab===0)renderHome();
+  else if(tab===1)renderCal();
+  else if(tab===2)renderAllTasks();
+  else if(tab===3)renderNotes();
+  else renderSets();
+  updateNav();
+}
+
+
+function renderListWithDate(list){
+  const pend=list.filter(tk=>!tk.done&&tk.status!=='moved');
+  const dn=list.filter(tk=>tk.done||tk.status==='moved');
+  let h='';
+  if(pend.length)h+=`<div class="sec-hdr"><span class="sec-t">${t('inWork')}</span><span class="sec-c">${pend.length}</span></div>`+pend.map(tk=>taskCard(tk,true)).join('');
+  if(dn.length)h+=`<div class="sec-hdr" style="margin-top:14px"><span class="sec-t">${t('done')}</span><span class="sec-c">${dn.length}</span></div>`+dn.map(tk=>taskCard(tk,true)).join('');
+  return h;
+}
+function fmtShortDate(ds){
+  const d=new Date(ds+'T12:00:00');
+  return d.toLocaleDateString(lang==='en'?'en-GB':'ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
+
+
+function localizeLabels(){
+  const m={lName:'Название',lDate:'Дата',lFrom:'С',lTo:'До',lPrio:'Приоритет',lRecur:'Повтор',lRemind:'Напоминание',lNote:'Заметка',lAttach:'Вложения',lTags:'Теги',lSubs:'Подзадачи',lAttachBtn:'Прикрепить файл',lNoteAttach:'Вложения'};
+  for(const k in m){const el=document.getElementById(k);if(el)el.textContent=t(k)||m[k];}
+  // Priority buttons
+  const pl=document.getElementById('pr_low');if(pl)pl.innerHTML='🟢 '+(t('prioLow')||'Низкий');
+  const pm=document.getElementById('pr_medium');if(pm)pm.innerHTML='🟡 '+(t('prioMedium')||'Средний');
+  const pu=document.getElementById('pr_urgent');if(pu)pu.innerHTML='🔴 '+(t('prioUrgent')||'Срочный');
+  // Save button
+  const sb=document.getElementById('saveBtnTask');if(sb)sb.innerHTML='💾 '+(t('save')||'Сохранить');
+  const db=document.getElementById('delBtnTask');if(db)db.innerHTML='🗑 '+(t('delete')||'Удалить');
+  const vf=document.getElementById('voiceFab');if(vf)vf.title=t('voiceTooltip')||'Голосовой ввод';
+}
+
+// ===== TASK CRUD =====
+function openAdd(){
+  editId=null;editSubtasks=[];editTaskTags=[];editAttachments=[];prio='low';
+  document.getElementById('tName').value='';
+  document.getElementById('tDate').value=fmt(selDate);
+  document.getElementById('tTimeStart').value='';
+  document.getElementById('tTimeEnd').value='';
+  document.getElementById('tRemind').value='';
+  document.getElementById('tRecur').value='';
+  document.getElementById('tNote').value='';
+  document.getElementById('addTitle').innerHTML=`${t('newTask')||(lang==='en'?'New task':lang==='uz'?'Yangi vazifa':'Новая задача')}<button class="mclose" onclick="closeOv('addOv')">✕</button>`;
+  document.getElementById('delBtnTask').style.display='none';
+  setPrio('low');
+  renderSubtasksList();
+  renderTagSelectGrid();
+  renderTaskAttachList();
+  document.getElementById('addOv').classList.add('open');
+}
+function openEdit(id){
+  const tk=tasks.find(x=>x.id===id);if(!tk)return;
+  editId=id;prio=tk.priority||'low';
+  editSubtasks=JSON.parse(JSON.stringify(tk.subtasks||[]));
+  editTaskTags=[...(tk.tags||[])];
+  editAttachments=JSON.parse(JSON.stringify(tk.attachments||[]));
+  document.getElementById('tName').value=tk.name;
+  document.getElementById('tDate').value=tk.date;
+  document.getElementById('tTimeStart').value=tk.timeStart||'';
+  document.getElementById('tTimeEnd').value=tk.timeEnd||'';
+  document.getElementById('tRemind').value=tk.remind||'';
+  document.getElementById('tRecur').value=tk.recurrence||'';
+  document.getElementById('tNote').value=tk.note||'';
+  document.getElementById('addTitle').innerHTML=`${lang==='en'?'Edit task':lang==='uz'?'Tahrirlash':'Редактировать'}<button class="mclose" onclick="closeOv('addOv')">✕</button>`;
+  document.getElementById('delBtnTask').style.display='block';
+  setPrio(prio);
+  renderSubtasksList();
+  renderTagSelectGrid();
+  renderTaskAttachList();
+  document.getElementById('addOv').classList.add('open');
+}
+function saveTask(){
+  const name=document.getElementById('tName').value.trim();
+  if(!name){showToast('⚠️ Введите название');return;}
+  const tk={
+    id:editId||uid(),name,
+    date:document.getElementById('tDate').value||fmt(selDate),
+    timeStart:document.getElementById('tTimeStart').value||null,
+    timeEnd:document.getElementById('tTimeEnd').value||null,
+    priority:prio,
+    done:editId?(tasks.find(x=>x.id===editId)||{}).done||false:false,
+    status:editId?(tasks.find(x=>x.id===editId)||{}).status||'':'',
+    remind:document.getElementById('tRemind').value||null,
+    recurrence:document.getElementById('tRecur').value||null,
+    note:document.getElementById('tNote').value.trim(),
+    tags:[...editTaskTags],
+    subtasks:JSON.parse(JSON.stringify(editSubtasks)),
+    attachments:JSON.parse(JSON.stringify(editAttachments)),
+    updated:new Date().toISOString(),
+    created:editId?(tasks.find(x=>x.id===editId)||{}).created||new Date().toISOString():new Date().toISOString(),
+  };
+  if(editId){const idx=tasks.findIndex(x=>x.id===editId);if(idx>=0)tasks[idx]=tk;}
+  else tasks.push(tk);
+  save();saveStats();closeOv('addOv');renderDstrip();renderAll();scheduleReminders();showToast(t('saved'));
+}
+function deleteTask(){
+  if(!editId)return;
+  tasks=tasks.filter(x=>x.id!==editId);
+  save();saveStats();closeOv('addOv');renderDstrip();renderAll();showToast(t('deleted'));
+}
+function toggleTask(id){
+  const tk=tasks.find(x=>x.id===id);if(!tk)return;
+  tk.done=!tk.done;
+  if(tk.done&&tk.recurrence){
+    const nxt=getNextRecurrence(tk.date,tk.recurrence);
+    if(nxt&&!tasks.find(x=>x.id!==tk.id&&x.name===tk.name&&x.date===nxt&&x.recurrence===tk.recurrence))
+      tasks.push({...JSON.parse(JSON.stringify(tk)),id:uid(),date:nxt,done:false,created:new Date().toISOString(),updated:new Date().toISOString()});
+  }
+  save();saveStats();renderAll();renderDstrip();
+}
+function getNextRecurrence(ds,rec){
+  const d=new Date(ds+'T12:00:00');
+  if(rec==='daily')d.setDate(d.getDate()+1);
+  else if(rec==='weekly')d.setDate(d.getDate()+7);
+  else if(rec==='monthly')d.setMonth(d.getMonth()+1);
+  else if(rec==='weekdays'){d.setDate(d.getDate()+1);while(d.getDay()===0||d.getDay()===6)d.setDate(d.getDate()+1);}
+  return fmt(d);
+}
+function toggleSubtaskDone(taskId,subId){
+  const tk=tasks.find(x=>x.id===taskId);if(!tk)return;
+  const sub=(tk.subtasks||[]).find(s=>s.id===subId);if(!sub)return;
+  sub.done=!sub.done;save();renderAll();
+}
+function checkOverdue(){
+  const overdue=tasks.filter(tk=>!tk.done&&tk.status!=='moved'&&tk.date<today()&&tk.date>='2020-01-01');
+  if(!overdue.length){showToast(t('noOverdue'));return;}
+  // show first overdue in alert
+  const tk=overdue[0];
+  showUrgentAlert(tk,`⚠️ Просрочено ${overdue.length} задач!`);
+}
+function setPrio(p){
+  prio=p;
+  ['low','medium','urgent'].forEach(x=>{
+    const b=document.getElementById('pr_'+x);if(!b)return;
+    b.className='pr'+(p===x?' on-'+x:'');
+  });
+}
+// SUBTASKS in modal
+function addSubtask(){
+  editSubtasks.push({id:uid(),text:'',done:false});
+  renderSubtasksList();
+  setTimeout(()=>{const inputs=document.querySelectorAll('#subtasksList .subtask-row input');if(inputs.length)inputs[inputs.length-1].focus();},50);
+}
+function removeSubtask(idx){editSubtasks.splice(idx,1);renderSubtasksList();}
+function renderSubtasksList(){
+  const el=document.getElementById('subtasksList');if(!el)return;
+  el.innerHTML=editSubtasks.map((s,i)=>`
+    <div class="subtask-row">
+      <span style="font-size:12px;color:var(--txt3)">${i+1}.</span>
+      <input type="text" value="${escHtml(s.text)}" placeholder="Подзадача..." oninput="editSubtasks[${i}].text=this.value">
+      <button class="subtask-del" onclick="removeSubtask(${i})">✕</button>
+    </div>`).join('');
+}
+// TAGS in modal
+function renderTagSelectGrid(){
+  const el=document.getElementById('tagSelectGrid');if(!el)return;
+  el.innerHTML=tags.map(tg=>`
+    <div class="tag-select-chip${editTaskTags.includes(tg.id)?' selected':''}"
+      style="${editTaskTags.includes(tg.id)?`border-color:${tg.color};background:${hexLighter(tg.color)};color:${tg.color}`:''}"
+      onclick="toggleEditTag('${tg.id}')">${escHtml(tg.name)}</div>`).join('');
+}
+function toggleEditTag(id){
+  const idx=editTaskTags.indexOf(id);
+  if(idx>=0)editTaskTags.splice(idx,1);else editTaskTags.push(id);
+  renderTagSelectGrid();
+}
+// TASK ATTACHMENTS
+function addTaskAttachment(input){
+  const files=Array.from(input.files||[]);
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      editAttachments.push({id:uid(),name:file.name,type:file.type,size:file.size,data:e.target.result,created:new Date().toISOString()});
+      renderTaskAttachList();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value='';
+}
+function removeTaskAttachment(id){editAttachments=editAttachments.filter(a=>a.id!==id);renderTaskAttachList();}
+function renderTaskAttachList(){
+  const el=document.getElementById('taskAttachList');if(!el)return;
+  el.innerHTML=editAttachments.map(a=>`
+    <div class="attach-item">
+      <span class="attach-ico">${fileIcon(a.type)}</span>
+      <div class="attach-info"><div class="attach-name">${escHtml(a.name)}</div><div class="attach-size">${fmtSize(a.size)}</div></div>
+      <button class="attach-del" onclick="removeTaskAttachment('${a.id}')">✕</button>
+    </div>`).join('');
+}
+// TAG MANAGER (modal from settings)
+function openTagEditor(id){
+  editTagId=id||null;editTagColor=id?(tags.find(tg=>tg.id===id)||{color:'#3d4fd4'}).color:'#3d4fd4';
+  const tg=id?tags.find(x=>x.id===id):null;
+  document.getElementById('tagNameInput').value=tg?tg.name:'';
+  document.getElementById('tagMdlTitle').innerHTML=(id?`Тег: ${escHtml(tg.name)}`:'Новый тег')+`<button class="mclose" onclick="closeOv('tagOv')">✕</button>`;
+  document.getElementById('tagDelBtn').style.display=id?'block':'none';
+  renderTagColorGrid();
+  document.getElementById('tagOv').classList.add('open');
+}
+function renderTagColorGrid(){
+  const el=document.getElementById('tagColorGrid');if(!el)return;
+  el.innerHTML=TAG_COLORS.map(c=>`<div class="csw${editTagColor===c?' selected':''}" style="background:${c}" onclick="selectTagColor('${c}')"></div>`).join('');
+  const sc=document.getElementById('tagSelectedColor');if(sc)sc.textContent='Выбрано: '+editTagColor;
+}
+function selectTagColor(c){editTagColor=c;renderTagColorGrid();}
+function saveTag(){
+  const name=document.getElementById('tagNameInput').value.trim();
+  if(!name){showToast('⚠️ Введите название');return;}
+  if(editTagId){const tg=tags.find(x=>x.id===editTagId);if(tg){tg.name=name;tg.color=editTagColor;}}
+  else tags.push({id:uid(),name,color:editTagColor});
+  saveTags();closeOv('tagOv');
+  if(tab===3)renderNotes();else renderAll();
+  showToast(t('saved'));
+}
+function deleteTagCurrent(){
+  if(!editTagId)return;
+  tags=tags.filter(tg=>tg.id!==editTagId);
+  tasks.forEach(tk=>{tk.tags=(tk.tags||[]).filter(id=>id!==editTagId);});
+  save();saveTags();closeOv('tagOv');renderAll();showToast(t('deleted'));
+}
+function renderTagList(){
+  const el=document.getElementById('tagListEl');if(!el)return;
+  el.innerHTML=tags.map(tg=>`
+    <div class="tag-item">
+      <div class="tag-swatch" style="background:${tg.color}"></div>
+      <div class="tag-name-d">${escHtml(tg.name)}</div>
+      <div class="tag-item-btns">
+        <button class="tag-ib tag-ib-edit" onclick="openTagEditor('${tg.id}')">✏️</button>
+        <button class="tag-ib tag-ib-del" onclick="quickDeleteTag('${tg.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+function quickDeleteTag(id){
+  tags=tags.filter(tg=>tg.id!==id);
+  tasks.forEach(tk=>{tk.tags=(tk.tags||[]).filter(x=>x!==id);});
+  save();saveTags();renderAll();showToast(t('deleted'));
+}
+
+
+// ===== FOCUS TIMER =====
+function renderFocusBar(){
+  if(!focusTaskId)return'';
+  const tk=tasks.find(x=>x.id===focusTaskId);if(!tk)return'';
+  const total=focusIsBreak?FOCUS_BREAK:FOCUS_WORK;
+  const pct=Math.round((1-focusSecs/total)*100);
+  const type=focusIsBreak?t('focusBreak'):t('focusWork');
+  const typeCls=focusIsBreak?' break':'';
+  return`<div class="focus-bar">
+    <div class="fb-header">
+      <span class="fb-type${typeCls}">${type}</span>
+      <span style="font-size:10px;color:var(--txt3)">${focusPomoCnt} ${t('focusPomo')}</span>
+    </div>
+    <div class="fb-task-name">${escHtml(tk.name)}</div>
+    <div class="fb-timer">${fmtSecs(focusSecs)}</div>
+    <div class="fb-progress"><div class="fb-progress-fill" style="width:${pct}%"></div></div>
+    <div class="fb-btns">
+      <button class="fb-btn fb-btn-pause" onclick="toggleFocusPause()">${focusPaused?'▶ Продолжить':'⏸ Пауза'}</button>
+      <button class="fb-btn fb-btn-stop" onclick="stopFocus()">✕ Стоп</button>
+    </div>
+  </div>`;
+}
+function startFocus(taskId){
+  if(focusInterval)clearInterval(focusInterval);
+  focusTaskId=taskId;focusSecs=FOCUS_WORK;focusIsBreak=false;focusPaused=false;
+  focusInterval=setInterval(focusTick,1000);
+  renderAll();
+}
+function toggleFocusPause(){
+  focusPaused=!focusPaused;
+  if(!focusPaused&&!focusInterval)focusInterval=setInterval(focusTick,1000);
+  renderAll();
+}
+function stopFocus(){
+  if(focusInterval)clearInterval(focusInterval);
+  focusInterval=null;focusTaskId=null;focusSecs=0;focusIsBreak=false;focusPaused=false;
+  renderAll();
+}
+function focusTick(){
+  if(focusPaused)return;
+  focusSecs--;
+  if(focusSecs<=0){
+    playAlarm();
+    if(!focusIsBreak){
+      focusPomoCnt++;
+      showToast(t('focusDone')+' 🎉 '+t('focusBreak')+'!');
+      focusIsBreak=true;focusSecs=FOCUS_BREAK;
     } else {
-      currentUser = null;
-      authContainer.classList.remove('hidden');
-      appContainer.classList.add('hidden');
-      if (unsubscribeTasks) {
-        unsubscribeTasks();
-        unsubscribeTasks = null;
-      }
-      tasks = [];
+      showToast(t('focusDone')+' ☕ '+t('focusWork')+'!');
+      focusIsBreak=false;focusSecs=FOCUS_WORK;
     }
-  });
-
-  // ========== Firestore подписка ==========
-  function subscribeToTasks() {
-    if (!currentUser) return;
-    if (unsubscribeTasks) unsubscribeTasks();
-    const q = db.collection('tasks').where('userId', '==', currentUser.uid);
-    unsubscribeTasks = q.onSnapshot(snapshot => {
-      const newTasks = [];
-      snapshot.forEach(doc => {
-        newTasks.push({ id: doc.id, ...doc.data() });
-      });
-      tasks = newTasks;
-      renderCurrentDateTasks();
-      updateStatsAndChart();
-      renderUpcoming();
-      renderCalendar();
-    }, error => {
-      console.error('Firestore error:', error);
-    });
   }
-
-  // ========== CRUD ==========
-  function addTaskToFirestore(task) {
-    if (!currentUser) return;
-    return db.collection('tasks').add({
-      ...task,
-      userId: currentUser.uid,
-      notifiedDayBefore: false,
-      notifiedMorning: false
-    });
+  // Update only the focus bar without full re-render
+  const fbar=document.querySelector('.focus-bar');
+  if(fbar){
+    const total=focusIsBreak?FOCUS_BREAK:FOCUS_WORK;
+    const pct=Math.round((1-focusSecs/total)*100);
+    const timerEl=fbar.querySelector('.fb-timer');if(timerEl)timerEl.textContent=fmtSecs(focusSecs);
+    const progEl=fbar.querySelector('.fb-progress-fill');if(progEl)progEl.style.width=pct+'%';
+    const typeEl=fbar.querySelector('.fb-type');
+    if(typeEl){typeEl.textContent=focusIsBreak?t('focusBreak'):t('focusWork');typeEl.className='fb-type'+(focusIsBreak?' break':'');}
+    const pauseEl=fbar.querySelector('.fb-btn-pause');if(pauseEl)pauseEl.textContent=focusPaused?'▶ Продолжить':'⏸ Пауза';
   }
+}
 
-  function updateTaskInFirestore(docId, data) {
-    return db.collection('tasks').doc(docId).update(data);
+// ===== NOTES =====
+function saveNotes2(){saveNotes();}
+function escHtml2(s){return escHtml(s);}
+
+function renderNotes(){
+  const main=document.getElementById('main');
+  const startBtn=dictOn
+    ?`<button class="rbtn r-stop" id="dictStopBtn" onclick="dictStop()">${t('recStop')}</button>`
+    :`<button class="rbtn r-rec" id="dictStartBtn" onclick="dictStart()">${t('recStart')}</button>`;
+  const recHtml=`<div class="rec-widget">
+    <div class="rec-widget-hdr">
+      <span class="rec-widget-t">🎙 ${t('recWidget')}</span>
+      <span class="rec-timer" id="dictTimerEl">${dictOn?fmtSecs(dictSecs):''}</span>
+    </div>
+    <div class="rec-btns">
+      ${startBtn}
+      <button class="rbtn r-play" id="dictPlayBtn" onclick="dictPlay()" ${dictBlob?'':'disabled'}>${t('recPlay')}</button>
+      <button class="rbtn r-save" id="dictSaveBtn" onclick="dictSaveNote()" ${dictBlob?'':'disabled'}>${t('recSave')}</button>
+    </div>
+    <div class="dict-result${dictBlob&&!dictOn?' show':''}" id="dictResult">
+      ${dictAudioURL?`<audio class="dict-audio-player" controls src="${dictAudioURL}"></audio>`:''}
+      ${dictTranscript?`<div class="dict-transcript-label">${t('transcript')}</div><div class="dict-transcript">${escHtml(dictTranscript)}</div>`:''}
+    </div>
+  </div>`;
+  // Tag filter for notes (none needed, just show all)
+  if(!notes.length){
+    main.innerHTML=recHtml+`<div class="empty"><div class="empty-ico">📝</div><div class="empty-t">${t('noNotes')}</div><div class="empty-s">${t('noNotesHint')}</div></div>`;
+    return;
   }
-
-  function deleteTaskFromFirestore(docId) {
-    return db.collection('tasks').doc(docId).delete();
+  const sorted=[...notes].sort((a,b)=>(b.updated||b.created).localeCompare(a.updated||a.created));
+  main.innerHTML=recHtml+sorted.map(n=>`
+    <div class="note-card" onclick="openEditNote('${n.id}')">
+      <div class="note-title">${escHtml(n.title||t('newNote'))}</div>
+      <div class="note-preview">${escHtml(n.text||'')}</div>
+      <div class="note-meta">
+        <span>${fmtNoteDate(n.updated||n.created)}</span>
+        ${(n.attachments||[]).length?`<span class="attach-count">📎 ${n.attachments.length}</span>`:''}
+      </div>
+      <button class="note-del" onclick="event.stopPropagation();deleteNoteById('${n.id}')">✕</button>
+    </div>`).join('');
+}
+function openNewNote(){
+  editNoteId=null;noteEditAttachments=[];
+  document.getElementById('nTitle').value='';
+  document.getElementById('nText').value='';
+  document.getElementById('noteMdlTitle').innerHTML=t('newNote')+`<button class="mclose" onclick="closeOv('noteOv')">✕</button>`;
+  document.getElementById('noteDelBtn').style.display='none';
+  const vb=document.getElementById('noteVoiceBtn');if(vb){vb.textContent=t('voiceOn');vb.classList.remove('on');}
+  document.getElementById('noteVoiceStatus').textContent='';
+  renderNoteAttachList();
+  document.getElementById('noteOv').classList.add('open');
+}
+function openEditNote(id){
+  const n=notes.find(x=>x.id===id);if(!n)return;
+  editNoteId=id;noteEditAttachments=JSON.parse(JSON.stringify(n.attachments||[]));
+  document.getElementById('nTitle').value=n.title||'';
+  document.getElementById('nText').value=n.text||'';
+  document.getElementById('noteMdlTitle').innerHTML=t('editNote')+`<button class="mclose" onclick="closeOv('noteOv')">✕</button>`;
+  document.getElementById('noteDelBtn').style.display='block';
+  const vb=document.getElementById('noteVoiceBtn');if(vb){vb.textContent=t('voiceOn');vb.classList.remove('on');}
+  document.getElementById('noteVoiceStatus').textContent='';
+  renderNoteAttachList();
+  document.getElementById('noteOv').classList.add('open');
+}
+function saveNote(){
+  const title=(document.getElementById('nTitle').value||'').trim();
+  const text=(document.getElementById('nText').value||'').trim();
+  if(!title&&!text&&!noteEditAttachments.length){showToast('⚠️ Заметка пустая');return;}
+  stopNoteVoice();
+  const now=new Date().toISOString();
+  if(editNoteId){
+    const n=notes.find(x=>x.id===editNoteId);
+    if(n){n.title=title||t('newNote');n.text=text;n.attachments=[...noteEditAttachments];n.updated=now;}
+  } else {
+    notes.push({id:uid(),title:title||t('newNote'),text,attachments:[...noteEditAttachments],created:now,updated:now});
   }
-
-  async function importTasksFromJSON(jsonArray) {
-    if (!currentUser) return;
-    const batch = db.batch();
-    jsonArray.forEach(task => {
-      const newDocRef = db.collection('tasks').doc();
-      batch.set(newDocRef, {
-        title: task.title || '',
-        date: task.date || currentDate,
-        startTime: task.startTime || '09:00',
-        endTime: task.endTime || '10:00',
-        priority: task.priority || 3,
-        completed: task.completed || false,
-        rescheduleReason: task.rescheduleReason || '',
-        notifiedDayBefore: false,
-        notifiedMorning: false,
-        userId: currentUser.uid
-      });
-    });
-    await batch.commit();
+  saveNotes();closeOv('noteOv');renderNotes();showToast(t('noteSaved'));
+}
+function deleteNote(){if(editNoteId)deleteNoteById(editNoteId);closeOv('noteOv');}
+function deleteNoteById(id){
+  const n=notes.find(x=>x.id===id);
+  if(n)(n.attachments||[]).forEach(a=>idbDel(a.id));
+  notes=notes.filter(n=>n.id!==id);saveNotes();renderNotes();showToast(t('noteDel'));
+}
+// NOTE ATTACHMENTS
+async function addNoteAttachment(input){
+  const files=Array.from(input.files||[]);
+  for(const file of files){
+    const id=uid();
+    try{await idbPut(id,file);}catch(e){showToast('⚠️ Ошибка сохранения: '+file.name);continue;}
+    noteEditAttachments.push({id,name:file.name,type:file.type,size:file.size,created:new Date().toISOString()});
   }
-
-  // ========== Инициализация UI ==========
-  function setupUI() {
-    document.getElementById('langSwitcher').addEventListener('change', e => applyLanguage(e.target.value));
-    document.getElementById('themeCycleBtn').addEventListener('click', cycleTheme);
-    document.getElementById('addTaskBtn').addEventListener('click', addTaskHandler);
-    selectedDateInput.addEventListener('change', e => { currentDate = e.target.value; renderCurrentDateTasks(); renderCalendar(); });
-    filterSelect.addEventListener('change', e => { filterPriority = e.target.value; renderCurrentDateTasks(); });
-    searchInput.addEventListener('input', () => renderCurrentDateTasks());
-    document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
-    document.getElementById('importTasksBtn').addEventListener('click', () => document.getElementById('importFile').click());
-    document.getElementById('importFile').addEventListener('change', handleImportFile);
-    document.getElementById('inlineWordBtn').addEventListener('click', exportWord);
-    document.getElementById('inlineExcelBtn').addEventListener('click', exportExcel);
-    document.getElementById('inlinePdfBtn').addEventListener('click', exportPDF);
-
-    // Dropdown
-    document.getElementById('dropdownToggleBtn').addEventListener('click', function(e) {
-      e.stopPropagation();
-      document.getElementById('dropdownMenu').classList.toggle('show');
-    });
-    document.getElementById('menuScreenshotBtn').addEventListener('click', () => { screenshot(); document.getElementById('dropdownMenu').classList.remove('show'); });
-    document.getElementById('menuPdfBtn').addEventListener('click', () => { exportPDF(); document.getElementById('dropdownMenu').classList.remove('show'); });
-    document.getElementById('menuWordBtn').addEventListener('click', () => { exportWord(); document.getElementById('dropdownMenu').classList.remove('show'); });
-    document.getElementById('menuExcelBtn').addEventListener('click', () => { exportExcel(); document.getElementById('dropdownMenu').classList.remove('show'); });
-    window.addEventListener('click', e => {
-      if (!document.getElementById('dropdownToggleBtn').contains(e.target) && !document.getElementById('dropdownMenu').contains(e.target))
-        document.getElementById('dropdownMenu').classList.remove('show');
-    });
-
-    selectedDateInput.value = currentDate;
-    applyLanguage(currentLang);
-    renderCalendar();
-    checkNotifications();
-    setInterval(checkNotifications, 60000);
-    initPWA();
-  }
-
-  function applyLanguage(lang) {
-    currentLang = lang;
-    const t = translations[lang];
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      if (t[key]) el.innerText = t[key];
-    });
-    document.querySelector('#filterPriority option[value="all"]').innerText = t.filterAll;
-    document.querySelector('#filterPriority option[value="1"]').innerText = t.filterHigh;
-    document.querySelector('#filterPriority option[value="2"]').innerText = t.filterMid;
-    document.querySelector('#filterPriority option[value="3"]').innerText = t.filterLow;
-    document.querySelector('#taskPriority option[value="1"]').innerHTML = `🔥 ${t.filterHigh}`;
-    document.querySelector('#taskPriority option[value="2"]').innerHTML = `🟠 ${t.filterMid}`;
-    document.querySelector('#taskPriority option[value="3"]').innerHTML = `🔵 ${t.filterLow}`;
-    document.getElementById('menuScreenshotBtn').innerText = t.screenshotBtn;
-    document.getElementById('pwaInstallBtn').innerText = t.installBtn;
-    document.getElementById('taskTitle').placeholder = t.taskPlaceholder;
-    document.getElementById('searchTasks').placeholder = t.searchPlaceholder;
-    selectedDateLabelSpan.innerText = currentDate;
-    renderCurrentDateTasks();
-    renderUpcoming();
-    renderCalendar();
-    updateStatsAndChart();
-  }
-
-  // ========== Рендер задач с мутными кнопками ==========
-  function renderCurrentDateTasks() {
-    if (!currentUser) return;
-    let filtered = tasks.filter(t => t.date === currentDate);
-    if (filterPriority !== 'all') filtered = filtered.filter(t => t.priority == filterPriority);
-    const searchTerm = searchInput.value.trim().toLowerCase();
-    if (searchTerm) filtered = filtered.filter(t => t.title.toLowerCase().includes(searchTerm));
-    const t = translations[currentLang];
-    selectedDateLabelSpan.innerText = currentDate;
-    if (filtered.length === 0) {
-      tasksContainer.innerHTML = `<div style="text-align:center">${t.noTasks}</div>`;
-      return;
-    }
-    tasksContainer.innerHTML = filtered.map(task => {
-      const completed = task.completed;
-      const reason = task.rescheduleReason ? `<div class="task-reason">📌 ${t.reasonLabel} ${escapeHtml(task.rescheduleReason)}</div>` : '';
-      return `
-        <div class="task-item priority-${task.priority}">
-          <div>
-            <div class="task-header">
-              <span class="task-title" style="${completed ? 'text-decoration:line-through;opacity:0.7' : ''}">${escapeHtml(task.title)}</span>
-              <span class="task-time">⏰ ${task.startTime} – ${task.endTime}</span>
-            </div>
-            ${reason}
-          </div>
-          <div class="task-actions">
-            <button onclick="toggleComplete('${task.id}')">
-              ${completed ? t.undoBtn : t.completeBtn}
-            </button>
-            <button onclick="showRescheduleDialog('${task.id}')"
-                    ${completed ? 'disabled class="muted-btn"' : ''}>
-              📅 ${t.reschedBtn}
-            </button>
-            <button onclick="deleteTask('${task.id}')"
-                    ${completed ? 'disabled class="muted-btn"' : ''}>
-              🗑 ${t.deleteBtn}
-            </button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  window.toggleComplete = async function(docId) {
-    const task = tasks.find(t => t.id === docId);
-    if (!task) return;
-    await updateTaskInFirestore(docId, { completed: !task.completed });
-  };
-
-  window.deleteTask = async function(docId) {
-    await deleteTaskFromFirestore(docId);
-  };
-
-  window.showRescheduleDialog = function(docId) {
-    const task = tasks.find(t => t.id === docId);
-    if (!task) return;
-    const t = translations[currentLang];
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.innerHTML = `
-      <div class="reschedule-modal">
-        <h3>${t.reschedTitle}</h3>
-        <p><strong>${escapeHtml(task.title)}</strong></p>
-        <label>${t.newDate}</label><input type="date" id="newDate" value="${task.date}">
-        <label>${t.newStart}</label><input type="time" id="newStart" value="${task.startTime}">
-        <label>${t.newEnd}</label><input type="time" id="newEnd" value="${task.endTime}">
-        <label>${t.reasonLabel}</label><textarea id="reason" rows="2" placeholder="${t.reasonPlaceholder}"></textarea>
-        <div style="display:flex;gap:12px;margin-top:16px">
-          <button id="confirmRescheduleBtn" style="background:#2c6e9e">${t.confirmResched}</button>
-          <button id="cancelBtn">${t.cancel}</button>
-        </div>
+  input.value='';
+  renderNoteAttachList();
+}
+function removeNoteAttachment(id){idbDel(id);noteEditAttachments=noteEditAttachments.filter(a=>a.id!==id);renderNoteAttachList();}
+// NOTE LINKS
+function addNoteLink(){
+  const inp=document.getElementById('noteLinkInput');
+  if(!inp)return;
+  let url=inp.value.trim();
+  if(!url)return;
+  if(!/^https?:\/\//i.test(url))url='https://'+url;
+  const title=url.replace(/^https?:\/\//,'').replace(/\/.*$/,'').replace(/^www\./,'');
+  noteEditAttachments.push({id:uid(),type:'link',name:title,url,size:0,created:new Date().toISOString()});
+  inp.value='';
+  renderNoteAttachList();
+  showToast('🔗 Ссылка добавлена');
+}
+async function renderNoteAttachList(){
+  const el=document.getElementById('noteAttachList');if(!el)return;
+  const items=await Promise.all(noteEditAttachments.map(async a=>{
+    if(a.type==='link'){
+      return`<div class="link-chip">
+        <span class="attach-ico">🔗</span>
+        <a class="link-url" href="${escHtml(a.url)}" target="_blank" rel="noopener">${escHtml(a.name)}</a>
+        <button class="attach-del" onclick="removeNoteAttachment('${a.id}')">✕</button>
       </div>`;
-    document.body.appendChild(overlay);
-    document.getElementById('confirmRescheduleBtn').onclick = async () => {
-      const newDate = document.getElementById('newDate').value;
-      const newStart = document.getElementById('newStart').value;
-      const newEnd = document.getElementById('newEnd').value;
-      const reason = document.getElementById('reason').value.trim();
-      if (newDate && newStart && newEnd) {
-        await updateTaskInFirestore(docId, {
-          date: newDate, startTime: newStart, endTime: newEnd,
-          rescheduleReason: reason || task.rescheduleReason,
-          notifiedDayBefore: false, notifiedMorning: false
-        });
-        showToast(`${t.toastRescheduled} ${newDate} ${newStart}-${newEnd}`);
-      }
-      overlay.remove();
-    };
-    document.getElementById('cancelBtn').onclick = () => overlay.remove();
-    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    }
+    const blob=await idbGet(a.id).catch(()=>null);
+    const url=blob?URL.createObjectURL(blob):'';
+    return`<div class="attach-item" onclick="openAttachPreview('${a.id}')" style="cursor:pointer">
+      <span class="attach-ico">${fileIcon(a.type)}</span>
+      <div class="attach-info"><div class="attach-name">${escHtml(a.name)}</div><div class="attach-size">${fmtSize(a.size)} • 👁 ${t('preview')}</div></div>
+      ${url?`<a href="${url}" download="${escHtml(a.name).replace(/"/g,'&quot;')}" onclick="event.stopPropagation()" class="attach-del" style="color:var(--acc);font-size:18px;text-decoration:none" title="Скачать">↓</a>`:''}
+      <button class="attach-del" onclick="event.stopPropagation();removeNoteAttachment('${a.id}')">✕</button>
+    </div>`;
+  }));
+  el.innerHTML=items.join('');
+}
+// NOTE VOICE - FIXED (no doubling)
+function toggleNoteVoice(){if(noteRecOn)stopNoteVoice();else startNoteVoice();}
+function startNoteVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showToast('⚠️ Speech API не поддерживается');return;}
+  stopNoteVoice();
+  const ta=document.getElementById('nText');
+  let baseText=(ta?ta.value:'').trim();
+  noteSpeech=new SR();
+  noteSpeech.lang=lang==='uz'?'uz-UZ':lang==='en'?'en-US':'ru-RU';
+  noteSpeech.continuous=true;
+  noteSpeech.interimResults=false;
+  noteSpeech.maxAlternatives=1;
+  noteSpeech.onresult=e=>{
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(!e.results[i].isFinal)continue;
+      const raw=e.results[i][0].transcript.trim();
+      if(!raw)continue;
+      const converted=convertNumberWords(raw);
+      const formatted=formatNoteTranscript(converted);
+      baseText=(baseText+(baseText?'\n':'')+formatted).trim();
+      if(ta)ta.value=baseText;
+    }
   };
+  noteSpeech.onerror=e=>{
+    if(e.error!=='no-speech'&&e.error!=='aborted')stopNoteVoice();
+  };
+  noteSpeech.onend=()=>{
+    if(noteRecOn&&noteSpeech)try{noteSpeech.start();}catch(ex){}
+  };
+  noteRecOn=true;
+  try{noteSpeech.start();}catch(e){showToast('⚠️ Ошибка запуска');return;}
+  const vb=document.getElementById('noteVoiceBtn');
+  if(vb){vb.textContent=t('voiceOff');vb.classList.add('on');}
+  const vs=document.getElementById('noteVoiceStatus');
+  if(vs)vs.textContent='🔴 Слушаю...';
+}
+function stopNoteVoice(){
+  if(noteSpeech)try{noteSpeech.stop();}catch(e){}
+  noteSpeech=null;noteRecOn=false;
+  const vb=document.getElementById('noteVoiceBtn');if(vb){vb.textContent=t('voiceOn');vb.classList.remove('on');}
+  const vs=document.getElementById('noteVoiceStatus');if(vs)vs.textContent='';
+}
 
-  async function addTaskHandler() {
-    if (!taskTitle.value.trim() || !currentUser) return;
-    await addTaskToFirestore({
-      title: taskTitle.value.trim(),
-      date: currentDate,
-      startTime: startTimeInput.value,
-      endTime: endTimeInput.value,
-      priority: parseInt(taskPrioritySelect.value),
-      completed: false,
-      rescheduleReason: ""
-    });
-    taskTitle.value = '';
-  }
-
-  // ========== Блок «Завтра / Послезавтра» ==========
-  function renderUpcoming() {
-    const tomorrowDate = new Date(Date.now() + 86400000).toISOString().slice(0,10);
-    const afterTomorrowDate = new Date(Date.now() + 2*86400000).toISOString().slice(0,10);
-    const t = translations[currentLang];
-    const tomorrowTasks = tasks.filter(task => task.date === tomorrowDate && !task.completed);
-    const afterTasks = tasks.filter(task => task.date === afterTomorrowDate && !task.completed);
-    document.getElementById('tomorrowTasks').innerHTML = tomorrowTasks.length
-      ? tomorrowTasks.map(task => `<div>⏰ ${task.startTime}–${task.endTime} <strong>${escapeHtml(task.title)}</strong></div>`).join('')
-      : t.noTasksUpcoming;
-    document.getElementById('afterTomorrowTasks').innerHTML = afterTasks.length
-      ? afterTasks.map(task => `<div>⏰ ${task.startTime}–${task.endTime} <strong>${escapeHtml(task.title)}</strong></div>`).join('')
-      : t.noTasksUpcoming;
-  }
-
-  // ========== Календарь ==========
-  function renderCalendar() {
-    const year = currentCalendarMonth.getFullYear();
-    const month = currentCalendarMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    let startWeekday = firstDay.getDay();
-    if (startWeekday === 0) startWeekday = 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const today = new Date().toISOString().slice(0,10);
-
-    let gridHtml = '<div class="cal-days">';
-    for (let i = 1; i < startWeekday; i++) gridHtml += '<div></div>';
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const hasTasks = tasks.some(t => t.date === dateStr);
-      const hasOverdue = dateStr < today && tasks.some(t => t.date === dateStr && !t.completed);
-      const isSelected = currentDate === dateStr;
-      const classes = ['cal-day', isSelected ? 'selected' : '', hasOverdue ? 'overdue' : ''].filter(Boolean).join(' ');
-      gridHtml += `<div class="${classes}" data-date="${dateStr}">${d}${hasTasks ? '📌' : ''}</div>`;
-    }
-    gridHtml += '</div>';
-
-    const monthNames = currentLang === 'ru'
-      ? ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек']
-      : (currentLang === 'en'
-        ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        : ['Yan','Fev','Mar','Apr','May','Iyun','Iyul','Avg','Sen','Okt','Noy','Dek']);
-
-    const calendarDiv = document.getElementById('miniCalendar');
-    calendarDiv.innerHTML = `<div class="cal-month-nav"><button id="prevMonthBtn">◀</button><span>${monthNames[month]} ${year}</span><button id="nextMonthBtn">▶</button></div>${gridHtml}`;
-
-    document.querySelectorAll('.cal-day[data-date]').forEach(el => {
-      el.addEventListener('click', () => {
-        currentDate = el.dataset.date;
-        selectedDateInput.value = currentDate;
-        renderCurrentDateTasks();
-        renderCalendar();
-      });
-    });
-    document.getElementById('prevMonthBtn')?.addEventListener('click', () => { currentCalendarMonth.setMonth(currentCalendarMonth.getMonth() - 1); renderCalendar(); });
-    document.getElementById('nextMonthBtn')?.addEventListener('click', () => { currentCalendarMonth.setMonth(currentCalendarMonth.getMonth() + 1); renderCalendar(); });
-  }
-
-  // ========== КПД ==========
-  function updateStatsAndChart() {
-    const now = new Date();
-    const curYear = now.getFullYear(), curMonth = now.getMonth();
-    const prevDate = new Date(curYear, curMonth - 1, 1);
-    const prevYear = prevDate.getFullYear(), prevMonth = prevDate.getMonth();
-    const curPrefix = `${curYear}-${String(curMonth + 1).padStart(2, '0')}`;
-    const prevPrefix = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}`;
-
-    const t = translations[currentLang];
-    const monthNames = currentLang === 'ru'
-      ? ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек']
-      : (currentLang === 'en'
-        ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        : ['Yan','Fev','Mar','Apr','May','Iyun','Iyul','Avg','Sen','Okt','Noy','Dek']);
-
-    document.getElementById('currentMonthLabel').innerText = `${t.currentMonthStat} — ${monthNames[curMonth]} ${curYear}`;
-    document.getElementById('prevMonthLabel').innerText = `${t.prevMonthStat} — ${monthNames[prevMonth]} ${prevYear}`;
-
-    function renderMonthStats(monthTasks, ids, chartKey) {
-      const total = monthTasks.length;
-      const done = monthTasks.filter(t => t.completed).length;
-      const pct = total ? Math.round(done / total * 100) : 0;
-      document.getElementById(ids.total).innerText = total;
-      document.getElementById(ids.done).innerText = done;
-      document.getElementById(ids.pct).innerText = pct + '%';
-      if (chartInstances[chartKey]) chartInstances[chartKey].destroy();
-      const ctx = document.getElementById(ids.chart).getContext('2d');
-      chartInstances[chartKey] = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: [t.completedLabel, t.remaining],
-          datasets: [{ data: [done, total - done], backgroundColor: ['#2c6e2c', '#c2410c'] }]
-        },
-        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
-      });
-    }
-
-    renderMonthStats(
-      tasks.filter(t => t.date.startsWith(curPrefix)),
-      { total: 'totalTasksCur', done: 'completedTasksCur', pct: 'efficiencyPercentCur', chart: 'efficiencyChartCur' },
-      'cur'
-    );
-    renderMonthStats(
-      tasks.filter(t => t.date.startsWith(prevPrefix)),
-      { total: 'totalTasksPrev', done: 'completedTasksPrev', pct: 'efficiencyPercentPrev', chart: 'efficiencyChartPrev' },
-      'prev'
-    );
-  }
-
-  // ========== Уведомления ==========
-  function showToast(msg) {
-    const tDiv = document.createElement('div');
-    tDiv.className = 'toast-notification';
-    tDiv.innerHTML = `🔔 ${msg}<br><span style="font-size:10px">×</span>`;
-    tDiv.onclick = () => tDiv.remove();
-    document.body.appendChild(tDiv);
-    setTimeout(() => tDiv.remove(), 6000);
-  }
-
-  function playSound() {
-    try {
-      const a = new (AudioContext || window.webkitAudioContext)();
-      const o = a.createOscillator(), g = a.createGain();
-      o.connect(g); g.connect(a.destination);
-      o.frequency.value = 880; g.gain.value = 0.2;
-      o.start(); g.gain.exponentialRampToValueAtTime(0.00001, a.currentTime + 0.8);
-      o.stop(a.currentTime + 0.6); a.resume();
-    } catch(e) {}
-  }
-
-  let activeModalUrgent = false;
-  function showUrgent(task) {
-    if (activeModalUrgent) return;
-    activeModalUrgent = true;
-    const t = translations[currentLang];
-    const ov = document.createElement('div');
-    ov.className = 'modal-overlay';
-    ov.innerHTML = `<div class="urgent-modal"><h2>${t.urgentTitle}</h2><p><strong>${escapeHtml(task.title)}</strong></p><p>⏰ ${task.startTime} – ${task.endTime}<br>📅 ${task.date}</p><button id="closeUrgent" style="background:#b91c1c">${t.understood}</button></div>`;
-    document.body.appendChild(ov);
-    playSound();
-    document.getElementById('closeUrgent').onclick = () => { ov.remove(); activeModalUrgent = false; };
-    ov.onclick = e => { if (e.target === ov) { ov.remove(); activeModalUrgent = false; } };
-  }
-
-  function checkNotifications() {
-    if (!currentUser) return;
-    const now = new Date();
-    const today = now.toISOString().slice(0,10);
-    const hour = now.getHours();
-    const isMorning = hour >= 8 && hour <= 11;
-    const t = translations[currentLang];
-    tasks.forEach(async (task) => {
-      if (task.completed) return;
-      const before = new Date(`${task.date}T${task.startTime}:00`);
-      before.setDate(before.getDate() - 1);
-      const beforeStr = before.toISOString().slice(0,10);
-      if (!task.notifiedDayBefore && beforeStr === today) {
-        await updateTaskInFirestore(task.id, { notifiedDayBefore: true });
-        if (task.priority === 1) showUrgent(task);
-        else showToast(`${t.toastDayBefore}"${task.title}" в ${task.startTime}`);
+// Конвертация числительных слов в цифры (русский, english, uzbek)
+function convertNumberWords(text){
+  const RU_NUMS={
+    'ноль':0,'нуль':0,'нулю':0,'нули':0,
+    'один':1,'одна':1,'одно':1,'одного':1,'одному':1,'одним':1,'одной':1,
+    'два':2,'две':2,'двух':2,'двум':2,'двумя':2,
+    'три':3,'трёх':3,'трех':3,'трём':3,'трем':3,'тремя':3,
+    'четыре':4,'четырёх':4,'четырех':4,'четырём':4,'четырем':4,
+    'пять':5,'пяти':5,'пятью':5,
+    'шесть':6,'шести':6,'шестью':6,
+    'семь':7,'семи':7,'семью':7,
+    'восемь':8,'восьми':8,'восемью':8,
+    'девять':9,'девяти':9,'девятью':9,
+    'десять':10,'десяти':10,'десятью':10,
+    'одиннадцать':11,'одиннадцати':11,
+    'двенадцать':12,'двенадцати':12,
+    'тринадцать':13,'тринадцати':13,
+    'четырнадцать':14,'четырнадцати':14,
+    'пятнадцать':15,'пятнадцати':15,
+    'шестнадцать':16,'шестнадцати':16,
+    'семнадцать':17,'семнадцати':17,
+    'восемнадцать':18,'восемнадцати':18,
+    'девятнадцать':19,'девятнадцати':19,
+    'двадцать':20,'двадцати':20,'двадцатью':20,
+    'тридцать':30,'тридцати':30,'тридцатью':30,
+    'сорок':40,'сорока':40,
+    'пятьдесят':50,'пятидесяти':50,
+    'шестьдесят':60,'шестидесяти':60,
+    'семьдесят':70,'семидесяти':70,
+    'восемьдесят':80,'восьмидесяти':80,
+    'девяносто':90,'девяноста':90,
+    'сто':100,'ста':100,'стом':100,
+    'двести':200,'двухсот':200,'двумстам':200,
+    'триста':300,'трёхсот':300,'трехсот':300,
+    'четыреста':400,'четырёхсот':400,
+    'пятьсот':500,'пятисот':500,
+    'шестьсот':600,'шестисот':600,
+    'семьсот':700,'семисот':700,
+    'восемьсот':800,'восьмисот':800,
+    'девятьсот':900,'девятисот':900,
+    'тысяча':1000,'тысячи':1000,'тысяч':1000,'тысячу':1000,
+    'миллион':1000000,'миллиона':1000000,'миллионов':1000000,
+    'миллиард':1000000000,'миллиарда':1000000000
+  };
+  const EN_NUMS={
+    'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,
+    'six':6,'seven':7,'eight':8,'nine':9,'ten':10,
+    'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,
+    'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,
+    'twenty':20,'thirty':30,'forty':40,'fifty':50,
+    'sixty':60,'seventy':70,'eighty':80,'ninety':90,
+    'hundred':100,'thousand':1000,'million':1000000
+  };
+  const UZ_NUMS={
+    'nol':0,'bir':1,'ikki':2,'uch':3,'tort':4,'besh':5,
+    'olti':6,'yetti':7,'sakkiz':8,'toqqiz':9,'on':10,
+    'oʻn':10,'yigirma':20,'oʻttiz':30,'qirq':40,'ellik':50,
+    'oltmish':60,'yetmish':70,'sakson':80,'toʻqson':90,
+    'yuz':100,'ming':1000,'million':1000000
+  };
+  const numMap=lang==='en'?EN_NUMS:lang==='uz'?UZ_NUMS:RU_NUMS;
+  const words=text.split(/\s+/);
+  const out=[];
+  let acc=null;let lastWasNum=false;
+  for(let i=0;i<words.length;i++){
+    const w=words[i];
+    const wl=w.toLowerCase().replace(/[,.:;!?—–-]$/,'');
+    if(numMap[wl]!==undefined){
+      const v=numMap[wl];
+      if(acc===null){acc=v;}
+      else{
+        // composing: twenty+one=21, hundred*2+30=230 etc.
+        if(v>=1000&&acc>0){acc=acc*v;}
+        else if(v===100&&acc>0&&acc<10){acc=acc*100;}
+        else if(v<acc%100||v>=100){acc=acc+v;}
+        else{acc=acc+v;}
       }
-      if (!task.notifiedMorning && task.date === today && isMorning) {
-        await updateTaskInFirestore(task.id, { notifiedMorning: true });
-        if (task.priority === 1) showUrgent(task);
-        else showToast(`${t.toastToday}${task.startTime}: "${task.title}"`);
-      }
-    });
-  }
-
-  // ========== Экспорт ==========
-  async function screenshot() {
-    const el = document.querySelector('.container');
-    const canvas = await html2canvas(el, { scale: 1.5 });
-    const a = document.createElement('a');
-    a.download = 'peskov_screen.png'; a.href = canvas.toDataURL(); a.click();
-  }
-
-  function exportPDF() {
-    html2pdf().set({ margin: 0.5, filename: 'peskov_report.pdf' }).from(document.querySelector('.container')).save();
-  }
-
-  function exportWord() {
-    const clone = document.querySelector('.container').cloneNode(true);
-    const html = `<html><head><meta charset="UTF-8"><title>Peskov_tasks</title><style>body{font-family:system-ui;padding:20px}.task-actions button,.right-tools,.dropdown,.tiny-export-group,#addTaskBtn,#importTasksBtn,#exportJsonBtn,.tiny-btn,.icon-btn-sm,.lang-select{display:none}</style></head><body>${clone.innerHTML}</body></html>`;
-    const blob = new Blob([html], { type: 'application/msword' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'peskov_tasks.doc'; a.click();
-  }
-
-  function exportExcel() {
-    const data = [['Title','Date','Start','End','Priority','Status','Reason']];
-    tasks.forEach(t => data.push([t.title, t.date, t.startTime, t.endTime, (t.priority==1?'High':t.priority==2?'Medium':'Low'), t.completed?'Done':'Active', t.rescheduleReason||'']));
-    const csv = data.map(row => row.join('\t')).join('\n');
-    const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'peskov_tasks.xls'; a.click();
-  }
-
-  function exportJSON() {
-    const json = JSON.stringify(tasks.map(({ id, userId, notifiedDayBefore, notifiedMorning, ...rest }) => rest), null, 2);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-    a.download = 'peskov_backup.json'; a.click();
-  }
-
-  function handleImportFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      try {
-        const imported = JSON.parse(ev.target.result);
-        if (Array.isArray(imported)) {
-          if (confirm('Импортировать задачи? Текущие задачи не будут удалены.')) {
-            await importTasksFromJSON(imported);
-          }
-        }
-      } catch (err) {
-        alert('Ошибка формата JSON');
-      }
-    };
-    reader.readAsText(file);
-  }
-
-  // ========== Темы ==========
-  const themes = ['theme-light', 'theme-emerald', 'theme-soft'];
-  let themeIndex = 0;
-  function applyTheme(index) {
-    themes.forEach(t => document.body.classList.remove(t));
-    document.body.classList.add(themes[index]);
-    localStorage.setItem('peskov_theme', themes[index]);
-  }
-  function cycleTheme() {
-    themeIndex = (themeIndex + 1) % themes.length;
-    applyTheme(themeIndex);
-  }
-  (function initTheme() {
-    const saved = localStorage.getItem('peskov_theme');
-    if (saved && themes.includes(saved)) {
-      document.body.classList.add(saved);
-      themeIndex = themes.indexOf(saved);
+      lastWasNum=true;
     } else {
-      document.body.classList.add('theme-light');
-      themeIndex = 0;
+      if(lastWasNum&&acc!==null){out.push(String(acc));acc=null;}
+      out.push(w);lastWasNum=false;
     }
-  })();
+  }
+  if(acc!==null)out.push(String(acc));
+  return out.join(' ');
+}
 
-  // ========== PWA (исправленный start_url + service worker) ==========
-  function initPWA() {
-    function makeIcon(size) {
-      const c = document.createElement('canvas');
-      c.width = c.height = size;
-      const ctx = c.getContext('2d');
-      const r = size * 0.22;
-      const bg = ctx.createLinearGradient(0, 0, size, size);
-      bg.addColorStop(0, '#1e3c72'); bg.addColorStop(1, '#2a5298');
-      ctx.fillStyle = bg;
-      ctx.beginPath();
-      ctx.moveTo(r,0); ctx.lineTo(size-r,0); ctx.quadraticCurveTo(size,0,size,r);
-      ctx.lineTo(size,size-r); ctx.quadraticCurveTo(size,size,size-r,size);
-      ctx.lineTo(r,size); ctx.quadraticCurveTo(0,size,0,size-r);
-      ctx.lineTo(0,r); ctx.quadraticCurveTo(0,0,r,0); ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = 'white';
-      ctx.font = `bold ${Math.round(size*0.58)}px system-ui,'Segoe UI',sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('P', size/2, size/2 + size*0.03);
-      return c.toDataURL('image/png');
-    }
-    const icon192 = makeIcon(192);
-    const icon512 = makeIcon(512);
-    const appleLink = document.createElement('link');
-    appleLink.rel = 'apple-touch-icon'; appleLink.href = icon192;
-    document.head.appendChild(appleLink);
-    const manifest = {
-      name: 'PESKOV — умный помощник',
-      short_name: 'PESKOV',
-      description: 'Планировщик задач и встреч',
-      start_url: './',      // ← исправлено: теперь указывает на текущую папку
-      display: 'standalone',
-      background_color: '#1e1e2f',
-      theme_color: '#1e3c72',
-      orientation: 'portrait-primary',
-      icons: [
-        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-      ]
-    };
-    const mBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-    document.getElementById('pwa-manifest').href = URL.createObjectURL(mBlob);
+function formatNoteTranscript(text){
+  const maps={
+    ru:{1:['\u043f\u0435\u0440\u0432\u043e\u0435','\u043f\u0435\u0440\u0432\u044b\u0439','\u043f\u0435\u0440\u0432\u0430\u044f'],2:['\u0432\u0442\u043e\u0440\u043e\u0435','\u0432\u0442\u043e\u0440\u043e\u0439'],3:['\u0442\u0440\u0435\u0442\u044c\u0435','\u0442\u0440\u0435\u0442\u0438\u0439'],4:['\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043e\u0435','\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u044b\u0439'],5:['\u043f\u044f\u0442\u043e\u0435','\u043f\u044f\u0442\u044b\u0439']},
+    en:{1:['first'],2:['second'],3:['third'],4:['fourth'],5:['fifth']},
+    uz:{1:['birinchi'],2:['ikkinchi'],3:['uchinchi'],4:['tortinchi'],5:['beshinchi']}
+  };
+  const m=maps[lang]||maps.ru;const numMap={};
+  Object.entries(m).forEach(([num,words])=>words.forEach(w=>{numMap[w]=parseInt(num);}));
+  const words=text.trim().split(/\s+/);const lines=[];let cur=null;let num=0;
+  for(const w of words){
+    const wl=w.toLowerCase().replace(/[,.:;!?]/g,'');
+    if(numMap[wl]!==undefined){if(cur!==null&&cur.trim())lines.push(num+') '+cur.trim());num=numMap[wl];cur='';}
+    else if(cur!==null){cur+=' '+w;}
+    else{cur=w;}
+  }
+  if(cur!==null&&cur.trim())lines.push(num?num+') '+cur.trim():cur.trim());
+  return lines.join('\n');
+}
 
-    if ('serviceWorker' in navigator) {
-      const swCode = `
-        const CACHE = 'peskov-v1';
-        self.addEventListener('install', e => { self.skipWaiting(); });
-        self.addEventListener('activate', e => {
-          e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
-          self.clients.claim();
-        });
-        self.addEventListener('fetch', e => {
-          if (e.request.method !== 'GET') return;
-          e.respondWith(
-            caches.match(e.request).then(cached => {
-              const fetched = fetch(e.request).then(response => {
-                const clone = response.clone();
-                caches.open(CACHE).then(cache => cache.put(e.request, clone));
-                return response;
-              });
-              return cached || fetched;
-            })
-          );
-        });
-      `;
-      const swBlob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swUrl).catch(err => {
-        console.warn('Service Worker registration skipped (non-critical):', err);
-      });
-    }
-
-    let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault();
-      deferredPrompt = e;
-      document.getElementById('pwaInstallBtn').style.display = 'inline-flex';
-    });
-    window.addEventListener('appinstalled', () => {
-      deferredPrompt = null;
-      document.getElementById('pwaInstallBtn').style.display = 'none';
-      showPWAToast('✅ PESKOV установлен!');
-    });
-    window.triggerPWAInstall = function() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-      } else {
-        showPWAToast('💡 Меню браузера (⋮) → «Добавить на главный экран»');
+// DICTAPHONE — simultaneous recording + transcription
+function dictStart(){
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    dictBlob=null;dictAudioURL=null;dictTranscript='';
+    // MediaRecorder
+    const chunks=[];
+    dictRec=new MediaRecorder(stream);
+    dictRec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+    dictRec.onstop=()=>{
+      dictBlob=new Blob(chunks,{type:'audio/webm'});
+      dictAudioURL=URL.createObjectURL(dictBlob);
+      stream.getTracks().forEach(tr=>tr.stop());
+      // Show result
+      const res=document.getElementById('dictResult');
+      if(res){
+        res.className='dict-result show';
+        res.innerHTML=`<audio class="dict-audio-player" controls src="${dictAudioURL}"></audio>
+          ${dictTranscript?`<div class="dict-transcript-label">${t('transcript')}</div><div class="dict-transcript">${escHtml(dictTranscript)}</div>`:''}`;
       }
+      const sb=document.getElementById('dictSaveBtn');if(sb)sb.disabled=false;
+      const pb=document.getElementById('dictPlayBtn');if(pb)pb.disabled=false;
     };
-    function showPWAToast(msg) {
-      const t = document.getElementById('pwaToast');
-      t.textContent = msg;
-      t.style.display = 'block';
-      setTimeout(() => { t.style.display = 'none'; }, 4500);
+    dictRec.start(500);
+    dictOn=true;dictSecs=0;
+    dictTimer=setInterval(()=>{dictSecs++;const el=document.getElementById('dictTimerEl');if(el)el.textContent=fmtSecs(dictSecs);},1000);
+    // Simultaneous SpeechRecognition for transcription
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(SR){
+      dictSpeech=new SR();
+      dictSpeech.lang=lang==='uz'?'uz-UZ':lang==='en'?'en-US':'ru-RU';
+      dictSpeech.continuous=true;dictSpeech.interimResults=false;
+      dictSpeech.onresult=e=>{
+        for(let i=e.resultIndex;i<e.results.length;i++){
+          if(e.results[i].isFinal)dictTranscript+=(dictTranscript?' ':'')+e.results[i][0].transcript.trim();
+        }
+        const el=document.getElementById('dictTranscriptEl');if(el)el.textContent=dictTranscript;
+      };
+      dictSpeech.onend=()=>{if(dictOn)try{dictSpeech.start();}catch(ex){}};
+      try{dictSpeech.start();}catch(ex){}
+    }
+    renderNotes();
+  }).catch(()=>showToast('⚠️ Нет доступа к микрофону'));
+}
+function dictStop(){
+  clearInterval(dictTimer);dictOn=false;
+  if(dictSpeech)try{dictSpeech.stop();}catch(e){}
+  dictSpeech=null;
+  if(dictRec&&dictRec.state!=='inactive')dictRec.stop();
+  renderNotes();
+}
+function dictPlay(){
+  if(!dictAudioURL){showToast('⚠️ Нет записи');return;}
+  if(dictAudio)dictAudio.pause();
+  dictAudio=new Audio(dictAudioURL);dictAudio.play();
+}
+function dictSaveNote(){
+  if(!dictBlob){showToast('⚠️ Нет записи');return;}
+  const now=new Date();
+  const title='🎙 '+now.toLocaleString(lang==='en'?'en-GB':'ru-RU');
+  notes.push({id:uid(),title,text:dictTranscript||'[Аудиозапись]',attachments:[],created:now.toISOString(),updated:now.toISOString()});
+  saveNotes();renderNotes();showToast(t('noteSaved'));
+}
+
+
+// ===== SYNC PASSWORD =====
+let syncPwd = null;
+let syncPwdMode = 'setup'; // 'setup', 'verify'
+let syncPwdCallback = null;
+
+function showSyncPasswordModal(mode, callback){
+  syncPwdMode = mode;
+  syncPwdCallback = callback;
+  const el = document.getElementById('syncPwdOv');
+  if(!el)return;
+  const title = document.getElementById('syncPwdTitle');
+  const sub = document.getElementById('syncPwdSub');
+  const input = document.getElementById('syncPwdInput');
+  
+  if(mode === 'setup'){
+    if(title)title.textContent = '🔐 Установите пароль';
+    if(sub)sub.textContent = 'Пароль будет защищать ваши данные в облаке';
+  } else {
+    if(title)title.textContent = '🔐 Введите пароль';
+    if(sub)sub.textContent = 'Требуется пароль для доступа к облаку';
+  }
+  if(input)input.value = '';
+  if(input)input.focus();
+  el.classList.add('open');
+}
+
+function confirmSyncPassword(){
+  const pwd = document.getElementById('syncPwdInput').value;
+  if(!pwd){showToast('⚠️ Введите пароль');return;}
+  syncPwd = pwd;
+  closeOv('syncPwdOv');
+  if(syncPwdCallback)syncPwdCallback(pwd);
+}
+
+function encryptSync(data, pwd){
+  const salt = CryptoJS.lib.WordArray.random(16);
+  const key = CryptoJS.PBKDF2(pwd, salt, {keySize: 8, iterations: 1000});
+  const iv = CryptoJS.lib.WordArray.random(16);
+  const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), key, {iv});
+  const result = salt.toString() + iv.toString() + encrypted.toString();
+  return result;
+}
+
+function decryptSync(encrypted, pwd){
+  try{
+    const salt = CryptoJS.enc.Hex.parse(encrypted.slice(0, 32));
+    const iv = CryptoJS.enc.Hex.parse(encrypted.slice(32, 64));
+    const data = encrypted.slice(64);
+    const key = CryptoJS.PBKDF2(pwd, salt, {keySize: 8, iterations: 1000});
+    const decrypted = CryptoJS.AES.decrypt(data, key, {iv});
+    return JSON.parse(decrypted.toString(CryptoJS.enc.Utf8));
+  }catch(e){
+    showToast('⚠️ Неверный пароль');
+    return null;
+  }
+}
+
+// ===== NLP ПАРСЕР ЗАДАЧИ ИЗ ГОЛОСА =====
+let vqRec=null,vqRecOn=false,vqText='',vqParsed=null;
+
+function openVoiceQuickAdd(){
+  vqText='';vqParsed=null;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showToast('⚠️ Голос не поддерживается');return;}
+  if(vqRec)try{vqRec.abort();}catch(e){}
+  vqRec=new SR();
+  vqRec.lang=lang==='uz'?'uz-UZ':lang==='en'?'en-US':'ru-RU';
+  vqRec.continuous=true;
+  vqRec.interimResults=true;
+  vqRec.maxAlternatives=1;
+  document.getElementById('vqResult').textContent='';
+  document.getElementById('vqParsed').classList.remove('show');
+  document.getElementById('vqStatus').textContent=t('vqListening');
+  document.getElementById('vqHint').textContent=t('vqHint');
+  document.getElementById('vqOkBtn').style.display='none';
+  document.getElementById('voiceQuickOv').classList.add('open');
+  vqRecOn=true;
+  let finalTxt='';
+  vqRec.onresult=e=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)finalTxt+=' '+e.results[i][0].transcript.trim();
+      else interim+=e.results[i][0].transcript;
+    }
+    vqText=(finalTxt+' '+interim).trim();
+    document.getElementById('vqResult').textContent=vqText;
+    if(finalTxt.trim()){
+      vqParsed=parseVoiceTask(finalTxt);
+      showParsed(vqParsed);
+      document.getElementById('vqOkBtn').style.display='inline-block';
+    }
+  };
+  vqRec.onerror=e=>{if(e.error!=='no-speech'&&e.error!=='aborted'){document.getElementById('vqStatus').textContent='⚠️ '+e.error;}};
+  vqRec.onend=()=>{if(vqRecOn)try{vqRec.start();}catch(ex){}};
+  try{vqRec.start();}catch(e){showToast('⚠️ Микрофон занят');}
+}
+
+function vqStop(){
+  vqRecOn=false;
+  if(vqRec)try{vqRec.stop();}catch(e){}
+  document.getElementById('vqStatus').textContent=t('vqReady');
+  if(vqText){
+    vqParsed=parseVoiceTask(vqText);
+    showParsed(vqParsed);
+    document.getElementById('vqOkBtn').style.display='inline-block';
+  }
+}
+
+function vqApply(){
+  if(!vqParsed){showToast('⚠️ Нечего создавать');return;}
+  const newTask={
+    id:uid(),
+    name:vqParsed.name||vqText,
+    date:vqParsed.date||fmt(selDate),
+    timeStart:vqParsed.timeStart||null,
+    timeEnd:vqParsed.timeEnd||null,
+    priority:vqParsed.priority||'low',
+    done:false,
+    remind:vqParsed.remind||null,
+    remindDate:vqParsed.remindDate||null,
+    note:'',
+    tags:[],
+    subtasks:[],
+    attachments:[],
+    created:new Date().toISOString(),
+    updated:new Date().toISOString()
+  };
+  tasks.push(newTask);
+  save();saveStats();
+  vqStop();
+  closeOv('voiceQuickOv');
+  renderDstrip();renderAll();scheduleReminders();
+  showToast('✅ '+t('taskAdded'));
+}
+
+function showParsed(p){
+  if(!p)return;
+  const el=document.getElementById('vqParsed');
+  let html='';
+  if(p.name)html+=`<div class="vq-parsed-row"><span class="vq-parsed-label">📝 ${t('lName')}:</span><span class="vq-parsed-val">${escHtml(p.name)}</span></div>`;
+  if(p.date)html+=`<div class="vq-parsed-row"><span class="vq-parsed-label">📅 ${t('lDate')}:</span><span class="vq-parsed-val">${fmtShortDate(p.date)}</span></div>`;
+  if(p.timeStart)html+=`<div class="vq-parsed-row"><span class="vq-parsed-label">⏰ ${t('lFrom')}:</span><span class="vq-parsed-val">${p.timeStart}${p.timeEnd?' – '+p.timeEnd:''}</span></div>`;
+  if(p.priority&&p.priority!=='low')html+=`<div class="vq-parsed-row"><span class="vq-parsed-label">🚨 ${t('lPrio')}:</span><span class="vq-parsed-val">${p.priority==='urgent'?t('prioUrgent'):t('prioMedium')}</span></div>`;
+  if(p.remind)html+=`<div class="vq-parsed-row"><span class="vq-parsed-label">🔔 ${t('lRemind')}:</span><span class="vq-parsed-val">${p.remindDate?fmtShortDate(p.remindDate)+' ':''}${p.remind}</span></div>`;
+  el.innerHTML=html;
+  el.classList.add('show');
+}
+
+// Парсер: извлекает date/time/priority/remind из фразы
+function parseVoiceTask(text){
+  let t=' '+text.toLowerCase().replace(/[,.]/g,' ').replace(/\s+/g,' ')+' ';
+  const original=text;
+  const r={name:'',date:null,timeStart:null,timeEnd:null,priority:'low',remind:null,remindDate:null};
+  
+  const MONTHS={'январ':1,'феврал':2,'март':3,'апрел':4,'мая':5,'мае':5,'май':5,'июн':6,'июл':7,'август':8,'сентябр':9,'октябр':10,'ноябр':11,'декабр':12,
+    'january':1,'february':2,'march':3,'april':4,'may':5,'june':6,'july':7,'august':8,'september':9,'october':10,'november':11,'december':12,
+    'jan':1,'feb':2,'mar':3,'apr':4,'jun':6,'jul':7,'aug':8,'sep':9,'oct':10,'nov':11,'dec':12};
+  const DAYS_RU={'понедельник':1,'вторник':2,'среда':3,'среду':3,'четверг':4,'пятница':5,'пятницу':5,'суббота':6,'субботу':6,'воскресенье':0};
+  
+  // 1. Приоритет
+  if(/срочн|важн|неотложн|urgent|immediately|asap/.test(t)){r.priority='urgent';t=t.replace(/(статус\s+)?(срочн\w*|важн\w*|неотложн\w*|urgent|immediately|asap)/g,' ');}
+  else if(/средн|обычн|medium|normal/.test(t)){r.priority='medium';t=t.replace(/(статус\s+)?(средн\w*|обычн\w*|medium|normal)/g,' ');}
+  
+  // 2. Напоминание: "напомни ... в HH:MM" / "remind ... at HH:MM"
+  let remindBlock=null;
+  const remindMatch=t.match(/(?:напомни(?:ть)?(?:\s+мне)?(?:\s+о\s+ней)?|remind(?:\s+me)?(?:\s+about\s+it)?)([^.]*?)(?=\s*$|подготов|сделай|нужно|надо|task|приготов)/);
+  if(remindMatch){
+    remindBlock=remindMatch[1];
+    t=t.replace(remindMatch[0],' ');
+  }
+  
+  // 3. Время "с HH:MM до HH:MM" / "from HH to HH"
+  const timeRange=t.match(/(?:с|from|в)\s+(\d{1,2})[:.\s](\d{2})\s+(?:до|to|по)\s+(\d{1,2})[:.\s](\d{2})/);
+  if(timeRange){
+    r.timeStart=`${timeRange[1].padStart(2,'0')}:${timeRange[2]}`;
+    r.timeEnd=`${timeRange[3].padStart(2,'0')}:${timeRange[4]}`;
+    t=t.replace(timeRange[0],' ');
+  } else {
+    const single=t.match(/(?:в|at)\s+(\d{1,2})[:.\s](\d{2})/);
+    if(single){r.timeStart=`${single[1].padStart(2,'0')}:${single[2]}`;t=t.replace(single[0],' ');}
+  }
+  
+  // 4. Дата для напоминания (если есть remindBlock)
+  if(remindBlock){
+    const rDate=parseDateFromText(remindBlock,MONTHS,DAYS_RU);
+    const rTime=remindBlock.match(/(?:в|at)\s+(\d{1,2})[:.\s](\d{2})/);
+    if(rTime)r.remind=`${rTime[1].padStart(2,'0')}:${rTime[2]}`;
+    if(rDate)r.remindDate=rDate;
+  }
+  
+  // 5. Дата основная
+  if(/сегодня|today/.test(t)){r.date=fmt(new Date());t=t.replace(/сегодня|today/g,' ');}
+  else if(/завтра|tomorrow/.test(t)){const d=new Date();d.setDate(d.getDate()+1);r.date=fmt(d);t=t.replace(/завтра|tomorrow/g,' ');}
+  else if(/послезавтра|day after tomorrow/.test(t)){const d=new Date();d.setDate(d.getDate()+2);r.date=fmt(d);t=t.replace(/послезавтра|day after tomorrow/g,' ');}
+  else {
+    const dt=parseDateFromText(t,MONTHS,DAYS_RU);
+    if(dt){r.date=dt;
+      // remove from t
+      for(const k in MONTHS)t=t.replace(new RegExp('\\d{1,2}\\s+'+k+'(\\w+)?(\\s+\\d{4})?','g'),' ');
     }
   }
+  
+  // 6. Имя задачи — то что осталось, очищенное
+  r.name=t.replace(/\b(статус|приоритет|status|priority|года|year|в|на|с|до|по)\b/g,' ').replace(/\s+/g,' ').trim();
+  // Капитализируем первую букву
+  if(r.name)r.name=r.name.charAt(0).toUpperCase()+r.name.slice(1);
+  if(!r.name)r.name=original.split(/[.,]/)[0];
+  
+  return r;
+}
 
-  function escapeHtml(str) {
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+function parseDateFromText(t,MONTHS,DAYS_RU){
+  // "25 мая 2026" / "25 мая" / "may 25 2026"
+  let m=t.match(/(\d{1,2})\s+([а-яa-z]+)(?:\s+(\d{4}))?/);
+  if(m){
+    const day=parseInt(m[1]);
+    const monKey=Object.keys(MONTHS).find(k=>m[2].startsWith(k));
+    if(monKey){
+      const mon=MONTHS[monKey];
+      const year=m[3]?parseInt(m[3]):new Date().getFullYear();
+      const dt=new Date(year,mon-1,day,12,0,0);
+      if(dt<new Date()&&!m[3])dt.setFullYear(dt.getFullYear()+1);
+      return fmt(dt);
+    }
   }
+  // "may 25"
+  m=t.match(/([а-яa-z]+)\s+(\d{1,2})(?:\s+(\d{4}))?/);
+  if(m){
+    const monKey=Object.keys(MONTHS).find(k=>m[1].startsWith(k));
+    if(monKey){
+      const mon=MONTHS[monKey];
+      const day=parseInt(m[2]);
+      const year=m[3]?parseInt(m[3]):new Date().getFullYear();
+      const dt=new Date(year,mon-1,day,12,0,0);
+      if(dt<new Date()&&!m[3])dt.setFullYear(dt.getFullYear()+1);
+      return fmt(dt);
+    }
+  }
+  // День недели
+  for(const k in DAYS_RU){
+    if(t.includes(k)){
+      const d=new Date();
+      const target=DAYS_RU[k];
+      let diff=target-d.getDay();
+      if(diff<=0)diff+=7;
+      d.setDate(d.getDate()+diff);
+      return fmt(d);
+    }
+  }
+  return null;
+}
+
+// ===== ПРЕВЬЮ ВЛОЖЕНИЙ =====
+async function openAttachPreview(attId){
+  const blob=await idbGet(attId).catch(()=>null);
+  if(!blob){showToast('⚠️ Файл недоступен');return;}
+  const url=URL.createObjectURL(blob);
+  const att=noteEditAttachments.find(a=>a.id===attId);
+  if(!att){showToast('⚠️ Метаданные не найдены');return;}
+  const el=document.getElementById('previewContent');
+  if(att.type&&att.type.startsWith('image/')){
+    el.innerHTML=`<img src="${url}" alt="${escHtml(att.name)}">`;
+  } else if(att.type==='application/pdf'){
+    el.innerHTML=`<iframe src="${url}#toolbar=1"></iframe>`;
+  } else if(att.type&&att.type.startsWith('audio/')){
+    el.innerHTML=`<audio controls src="${url}" autoplay></audio>`;
+  } else if(att.type&&att.type.startsWith('video/')){
+    el.innerHTML=`<video controls src="${url}" autoplay></video>`;
+  } else {
+    el.innerHTML=`<div style="background:#fff;padding:30px;border-radius:8px;text-align:center"><div style="font-size:48px;margin-bottom:14px">${fileIcon(att.type)}</div><div style="margin-bottom:14px;color:#333">${escHtml(att.name)}</div><a href="${url}" download="${escHtml(att.name).replace(/"/g,'&quot;')}" style="background:var(--acc);color:#fff;padding:10px 24px;border-radius:9px;text-decoration:none">↓ Скачать</a></div>`;
+  }
+  document.getElementById('previewOv').classList.add('open');
+}
+
+function closePreview(){
+  document.getElementById('previewOv').classList.remove('open');
+  document.getElementById('previewContent').innerHTML='';
+}
+
+// ===== CLOUD SYNC (JSONBin.io) =====
+const JBIN='https://api.jsonbin.io/v3/b';
+function syncPayload(){
+  return{tasks,notes:notes.map(n=>({...n,attachments:(n.attachments||[]).map(({id,name,type,size})=>({id,name,type,size}))})),tags,v:5,syncedAt:new Date().toISOString()};
+}
+async function pushSync(){
+  const sid=localStorage.getItem('pp_sync_id');
+  if(!syncPwd&&sid){showSyncPasswordModal('verify',doPushSync);return;}
+  if(!syncPwd){showSyncPasswordModal('setup',doPushSync);return;}
+  doPushSync(syncPwd);
+}
+async function doPushSync(pwd){
+  const sid=localStorage.getItem('pp_sync_id');
+  const payload=syncPayload();
+  const encrypted=encryptSync(payload,pwd);
+  showToast('📤 Отправка...');
+  try{
+    let res;
+    if(sid){res=await fetch(JBIN+'/'+sid,{method:'PUT',headers:{'Content-Type':'text/plain','X-Bin-Versioning':'false'},body:encrypted});}
+    else{res=await fetch(JBIN,{method:'POST',headers:{'Content-Type':'text/plain','X-Bin-Name':'peskov-planner','X-Bin-Private':'false'},body:encrypted});}
+    if(res.ok){
+      if(!sid){const d=await res.json();localStorage.setItem('pp_sync_id',d.metadata.id);}
+      localStorage.setItem('pp_sync_ts',new Date().toISOString());
+      showToast('✅ Синхронизация выполнена');renderSets();
+    } else showToast('⚠️ Ошибка: '+res.status);
+  }catch(e){showToast('⚠️ Нет сети');}
+}
+async function pullSync(){
+  const sid=localStorage.getItem('pp_sync_id');
+  if(!sid){showToast('⚠️ Сначала введите Sync ID');return;}
+  if(!syncPwd){showSyncPasswordModal('verify',doPullSync);return;}
+  doPullSync(syncPwd);
+}
+async function doPullSync(pwd){
+  const sid=localStorage.getItem('pp_sync_id');
+  showToast('📥 Загрузка...');
+  try{
+    const res=await fetch(JBIN+'/'+sid+'/latest');
+    if(!res.ok){showToast('⚠️ Не найдено: '+res.status);return;}
+    const encrypted=await res.text();
+    const d=decryptSync(encrypted,pwd);
+    if(!d)return;
+    if(d.tasks)tasks=d.tasks;if(d.notes)notes=d.notes;if(d.tags)tags=d.tags;
+    save();saveNotes();saveTags();
+    localStorage.setItem('pp_sync_ts',new Date().toISOString());
+    renderDstrip();renderAll();showToast('✅ Данные загружены');
+  }catch(e){showToast('⚠️ Нет сети');}
+}
+function connectSyncId(){
+  const v=prompt('Введите Sync ID:');
+  if(v&&v.trim()){
+    localStorage.setItem('pp_sync_id',v.trim());
+    syncPwd=null;localStorage.removeItem('pp_sync_pwd');
+    renderSets();
+    showSyncPasswordModal('verify',pwd=>{syncPwd=pwd;localStorage.setItem('pp_sync_pwd_hint','saved')});
+  }
+}
+function clearSyncId(){
+  if(confirm('Отвязаться от облака?')){localStorage.removeItem('pp_sync_id');localStorage.removeItem('pp_sync_ts');syncPwd=null;renderSets();}
+}
+function copySyncId(){
+  const id=localStorage.getItem('pp_sync_id');if(!id)return;
+  navigator.clipboard&&navigator.clipboard.writeText(id).then(()=>showToast('📋 Sync ID скопирован'));
+}
+function syncCardHtml(){
+  const sid=localStorage.getItem('pp_sync_id');
+  const ts=localStorage.getItem('pp_sync_ts');
+  const tsL=ts?'Синх: '+new Date(ts).toLocaleString(lang==='en'?'en-GB':'ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Не синхронизировано';
+  return`<div class="sync-card">
+    <div class="sync-card-hdr">💻 Облаковая синхронизация<span style="font-size:10px;color:var(--txt3);font-weight:400;margin-left:auto">JSONBin.io • бесплатно</span></div>
+    ${sid?`<div class="sync-id-box" onclick="copySyncId()">🔑 ${sid} 📋</div>`:
+    '<div style="font-size:12px;color:var(--txt3);margin-bottom:8px">Нажмите «Сохранить» — получите Sync ID. На другом устройстве: нажмите «Подключить».</div>'}
+    <div class="sync-btns">
+      <button class="sync-btn sync-btn-push" onclick="pushSync()">📤 Сохранить</button>
+      ${sid?`<button class="sync-btn sync-btn-pull" onclick="pullSync()">📥 Загрузить</button>`:''}
+      <button class="sync-btn sync-btn-sec" onclick="connectSyncId()">🔗 Подключить</button>
+      ${sid?`<button class="sync-btn sync-btn-sec" onclick="clearSyncId()" title="Отвязаться">❌</button>`:''}
+    </div>
+    <div class="sync-status">${tsL}</div></div>`;
+}
+// ===== REMINDERS & ALARMS =====
+function scheduleReminders(){
+  reminderTimers.forEach(clearTimeout);reminderTimers=[];
+  const notifOk=Notification.permission==='granted';
+  const now=new Date();const todStr=today();
+  for(const tk of tasks){
+    if(tk.done)continue;
+    if(tk.remind&&tk.date>=todStr){
+      const[h,m]=tk.remind.split(':').map(Number);
+      const rt=new Date(tk.date+'T12:00:00');rt.setHours(h,m,0,0);
+      const diff=rt-now;
+      if(diff>0&&diff<7*24*60*60*1000){
+        reminderTimers.push(setTimeout(()=>{
+          if(notifOk)showSysNotif('🔔 '+tk.name,tk.date===todStr?t('today'):fmtDisp(tk.date),tk.id);
+          playAlarm();showUrgentAlert(tk,'🔔 Напоминание!');
+        },diff));
+      }
+    }
+    if(tk.timeStart&&tk.date===todStr&&tk.priority==='urgent'){
+      const[h,m]=tk.timeStart.split(':').map(Number);
+      const tt=new Date();tt.setHours(h,m,0,0);
+      const diff=tt-now-60*60*1000;
+      if(diff>0){
+        reminderTimers.push(setTimeout(()=>{
+          if(notifOk)showSysNotif('⚠️ '+tk.name,tk.timeStart,tk.id);
+          playAlarm();showUrgentAlert(tk,'⚠️ Срочно через 1 час!');
+        },diff));
+      }
+    }
+    if(tk.timeStart&&tk.date===todStr){
+      const[h,m]=tk.timeStart.split(':').map(Number);
+      const tt=new Date();tt.setHours(h,m,0,0);
+      const diff=tt-now;
+      if(diff>0){
+        reminderTimers.push(setTimeout(()=>{
+          if(notifOk)showSysNotif('⏰ '+tk.name,tk.timeStart+(tk.timeEnd?'–'+tk.timeEnd:''),tk.id);
+          playAlarm();showUrgentAlert(tk,'⏰ Начинается!');
+        },diff));
+      }
+    }
+  }
+}
+function playAlarm(){
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(alarmInterval)clearInterval(alarmInterval);
+    let cnt=0;
+    alarmInterval=setInterval(()=>{
+      const osc=audioCtx.createOscillator();
+      const gain=audioCtx.createGain();
+      osc.connect(gain);gain.connect(audioCtx.destination);
+      osc.frequency.value=880;osc.type='sine';
+      gain.gain.setValueAtTime(0.3,audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.4);
+      osc.start();osc.stop(audioCtx.currentTime+0.4);
+      if(++cnt>=3)clearInterval(alarmInterval);
+    },500);
+  }catch(e){}
+}
+function showSysNotif(title,body,taskId){
+  if(Notification.permission!=='granted')return;
+  if(notified.has(taskId+title))return;
+  notified.add(taskId+title);
+  localStorage.setItem('pp_notified',JSON.stringify([...notified]));
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.ready.then(sw=>{
+      sw.showNotification(title,{body,icon:'/icon-192.png',data:{taskId},
+        actions:[{action:'done',title:'✓ Выполнено'},{action:'snooze',title:'💤 +10 мин'}]});
+    }).catch(()=>new Notification(title,{body,icon:'/icon-192.png'}));
+  } else new Notification(title,{body,icon:'/icon-192.png'});
+}
+function showUrgentAlert(tk,ico){
+  alertTaskId=tk.id;
+  document.getElementById('alertIco').textContent=ico;
+  document.getElementById('alertTitle').textContent=tk.name;
+  document.getElementById('alertSub').textContent=(tk.date||'')+(tk.timeStart?' '+tk.timeStart:'');
+  document.getElementById('alertOv').classList.add('open');
+}
+function closeAlert(){document.getElementById('alertOv').classList.remove('open');alertTaskId=null;}
+function snooze(){
+  if(alertTaskId){
+    const tk=tasks.find(x=>x.id===alertTaskId);
+    if(tk){
+      const now=new Date();now.setMinutes(now.getMinutes()+10);
+      tk.remind=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+      save();scheduleReminders();
+    }
+  }
+  closeAlert();showToast('💤 +10 мин');
+}
+function requestNotifPerm(){
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){showToast('✅ Уведомления включены');renderSets();}
+    else showToast('⚠️ Разрешение не выдано');
+  });
+}
+
+// ===== VOICE INPUT (task) =====
+function openVoice(){
+  voiceText='';
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showToast('⚠️ Не поддерживается');return;}
+  rec=new SR();
+  rec.lang=lang==='uz'?'uz-UZ':lang==='en'?'en-US':'ru-RU';
+  rec.continuous=false;rec.interimResults=true;
+  document.getElementById('voiceResult').textContent='';
+  document.getElementById('voiceStatus').textContent='Говорите...';
+  document.getElementById('voiceOkBtn').style.display='none';
+  document.getElementById('voiceOv').classList.add('open');
+  rec.onresult=e=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    if(final){voiceText=final;document.getElementById('voiceResult').textContent=final;document.getElementById('voiceOkBtn').style.display='inline-block';}
+    else document.getElementById('voiceResult').textContent=interim;
+  };
+  rec.onend=()=>{document.getElementById('voiceStatus').textContent='Готово';};
+  rec.onerror=e=>{document.getElementById('voiceStatus').textContent='⚠️ '+e.error;};
+  rec.start();recOn=true;
+}
+function stopRec(){if(rec)try{rec.stop();}catch(e){}recOn=false;}
+function applyVoice(){
+  if(voiceText){document.getElementById('tName').value=voiceText;}
+  closeOv('voiceOv');
+}
+
+// ===== OVERLAY MANAGEMENT =====
+function closeOv(id){
+  document.getElementById(id).classList.remove('open');
+  if(id==='voiceOv')stopRec();
+  if(id==='noteOv')stopNoteVoice();
+}
+
+function clearDone(){
+  tasks=tasks.filter(tk=>!tk.done);save();renderAll();renderDstrip();saveStats();showToast(t('deleted'));
+}
+function dl(blob,name){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+// ===== CALENDAR HELPERS =====
+// shiftCal defined in render section
+
+// ===== HELP CONTENT =====
+const HELP={
+  ru:`
+<div style="background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;padding:18px;border-radius:14px;margin-bottom:14px;text-align:center">
+<div style="font-size:18px;font-weight:700;margin-bottom:8px">🎯 PESKOV Smart Planner</div>
+<div style="font-size:13px;line-height:1.6;opacity:.95">Ваш персональный цифровой помощник для делового человека.<br>Создан Турдалиевым Алишером Рустамовичем на основе многолетнего опыта работы в государственных структурах и частном секторе.</div></div>
+
+<div class="help-section"><div class="help-h">💡 Для чего это приложение</div><div class="help-t">PESKOV объединяет <b>планировщик задач, заметки, диктофон, фокус-таймер и облачное хранилище</b> в одном месте. Больше не нужно носить с собой блокнот, ручку, запоминать встречи, искать документы и адреса. Всё под рукой и работает <b>без интернета</b>. Голосовое управление позволяет быстро создать задачу, не вынимая телефон из кармана.</div></div>
+
+<div class="help-section"><div class="help-h">🎙 Голосовое создание задачи (новое!)</div><div class="help-t">На главной странице — большая кнопка <b>+</b> и круглая кнопка <b>🎙</b> рядом с ней. Нажмите 🎙 и скажите естественной речью:<br><br><i>«Подготовить отчёт двадцать пятого мая в четырнадцать ноль ноль, срочно, напомни двадцать четвёртого мая в двадцать один ноль ноль»</i><br><br>Приложение само распознает: <b>название</b>, <b>дату</b>, <b>время</b>, <b>приоритет</b> и <b>напоминание</b>. Нажмите «✓ Создать» — задача появится в календаре.</div></div>
+
+<div class="help-section"><div class="help-h">🔔 Напоминания — как работают</div><div class="help-t">В установленное время приложение издаст <b>звуковой сигнал</b> и покажет уведомление с двумя кнопками: <b>«✓ Выполнено»</b> и <b>«💤 +10 мин»</b>. Кнопки работают прямо из шторки уведомлений — не нужно открывать приложение.<br><br><b>Важно:</b> для надёжной работы напоминаний:<br>1. <b>Установите PWA на телефон</b> (Chrome → «Добавить на главный экран»)<br>2. Разрешите уведомления при первом запросе<br>3. Не закрывайте приложение полностью</div></div>
+
+<div class="help-section"><div class="help-h">✅ Задачи и подзадачи</div><div class="help-t"><b>Нажмите на задачу</b> — карточка раскроется для редактирования. Чекбокс ✓ — отметить выполненной. Внутри задачи можно создать <b>подзадачи</b> с прогресс-баром и запустить <b>⏱ Фокус-таймер</b> (метод Помодоро: 25 мин работы / 5 мин отдыха).</div></div>
+
+<div class="help-section"><div class="help-h">🔁 Повторяющиеся задачи</div><div class="help-t">При создании выберите <b>Повтор</b>: ежедневно / по будням / еженедельно / ежемесячно. Когда отмечаете выполненной — следующий экземпляр создаётся автоматически.</div></div>
+
+<div class="help-section"><div class="help-h">🏷 Теги</div><div class="help-t">Создавайте свои теги с любым названием и цветом. В Настройках → «Управление тегами». Все теги, включая дефолтные, <b>можно удалить или изменить</b>. В разделе «Все» фильтруйте задачи по тегу.</div></div>
+
+<div class="help-section"><div class="help-h">📝 Заметки и вложения (офлайн!)</div><div class="help-t">К заметкам можно прикреплять:<br>• <b>Фото</b> — маршрут к кафе, скриншоты, чеки<br>• <b>PDF документы</b> — договор для встречи, презентации<br>• <b>Аудио</b> — записи диалогов<br>• <b>Ссылки</b> — на сайты, статьи, локации<br><br>Все файлы хранятся <b>в памяти телефона</b> и открываются <b>без интернета</b>. Идёте на встречу в кафе? Сохраните скриншот карты Яндекса и фото фасада заранее — увидите даже без сети. Нужно обсудить PDF-договор? Откройте прямо в приложении.<br><br><b>👁 Клик по вложению</b> — встроенный просмотрщик (картинки, PDF, аудио, видео).</div></div>
+
+<div class="help-section"><div class="help-h">🎙 Диктофон встреч</div><div class="help-t">Во вкладке «Заметки» сверху — виджет <b>Диктофон</b>. Нажмите ⏺ — записывается <b>аудио + автоматическая расшифровка текста одновременно</b>. ⏹ — остановить. Слушать или сохранить в заметку — все данные останутся.</div></div>
+
+<div class="help-section"><div class="help-h">☁️ Облачная синхронизация — подробно</div><div class="help-t"><b>Зачем нужно:</b> у вас несколько устройств (телефон + ноутбук, личный + рабочий). Синхронизация передаёт данные между ними через защищённое облако.<br><br><b>Безопасность:</b> данные шифруются <b>паролем AES-256</b> у вас на устройстве <i>до</i> отправки в облако. Сервис JSONBin.io видит только зашифрованный текст — даже если кто-то получит к нему доступ, без вашего пароля данные не прочитать.<br><br><b>Шаг 1 (первое устройство — телефон):</b><br>1. Настройки ⚙️ → блок «Облачная синхронизация»<br>2. Нажмите <b>📤 Сохранить</b><br>3. Появится окно «🔐 Установите пароль» — придумайте сложный пароль (запомните!)<br>4. Получите <b>Sync ID</b> (длинный код) — нажмите на него для копирования<br><br><b>Шаг 2 (второе устройство — ноутбук):</b><br>1. Откройте приложение на ноутбуке<br>2. Настройки → «🔗 Подключить»<br>3. Вставьте Sync ID → OK<br>4. Введите <b>тот же пароль</b><br>5. Нажмите <b>📥 Загрузить</b> — все данные появятся<br><br><b>Дальше:</b><br>• Изменили что-то на телефоне → нажали 📤 Сохранить<br>• Открыли ноутбук → нажали 📥 Загрузить<br><br><b>Тарифы:</b> сервис JSONBin.io даёт <b>10 000 запросов в месяц бесплатно</b> — этого хватает для одного человека на годы. Это не наш сервис, мы только используем их API.</div></div>
+
+<div class="help-section"><div class="help-h">📅 Календарь и статистика</div><div class="help-t">Календарь: точки под датами показывают наличие задач. В Настройках: <b>график за неделю</b>, <b>счётчик streak</b> (дней подряд с выполненной задачей), <b>тепловая карта</b> активности за 30 дней.</div></div>
+
+<div class="help-section"><div class="help-h">🎨 Темы и языки</div><div class="help-t">Три темы: <b>Тёмная</b> (по умолчанию), <b>Светлая</b>, <b>Изумрудная</b>. Три языка: <b>RU / EN / UZ</b>. Переключение в шапке приложения.</div></div>
+
+<div class="help-section" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3)"><div class="help-h">💎 Важные советы</div><div class="help-t">• <b>Установите как PWA</b> — Chrome → меню → «Добавить на главный экран». Работает как полноценное приложение.<br>• <b>Регулярно делайте 📤 Сохранить</b> в облаке — это ваш бэкап.<br>• <b>Не теряйте Sync ID и пароль</b> — без них данные из облака не восстановить.<br>• <b>Прикрепляйте фото мест встреч</b> — сэкономите время и нервы.</div></div>
+`,
+  en:`
+<div style="background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;padding:18px;border-radius:14px;margin-bottom:14px;text-align:center">
+<div style="font-size:18px;font-weight:700;margin-bottom:8px">🎯 PESKOV Smart Planner</div>
+<div style="font-size:13px;line-height:1.6;opacity:.95">Your personal digital assistant for the busy professional.<br>Created by Alisher Rustamovich Turdaliev based on years of experience in government and private sector.</div></div>
+
+<div class="help-section"><div class="help-h">💡 What this app does</div><div class="help-t">PESKOV combines <b>task planner, notes, voice recorder, focus timer, and cloud storage</b> in one place. No more notebooks, pens, forgotten meetings, or hunting for documents. Everything is at your fingertips and <b>works offline</b>. Voice control lets you create tasks instantly.</div></div>
+
+<div class="help-section"><div class="help-h">🎙 Voice task creation</div><div class="help-t">On the home screen — big <b>+</b> button and round <b>🎙</b> button next to it. Press 🎙 and speak naturally:<br><br><i>"Prepare report on May 25 at 14:00, urgent, remind me May 24 at 21:00"</i><br><br>The app extracts: name, date, time, priority, reminder. Press "✓ Create" — task added.</div></div>
+
+<div class="help-section"><div class="help-h">🔔 Reminders</div><div class="help-t">At the set time, the app plays a <b>sound</b> and shows a notification with <b>"✓ Done"</b> and <b>"💤 +10 min"</b> buttons — work directly from the notification shade.<br><br><b>For reliability:</b> Install as PWA on phone, allow notifications, don't fully close the app.</div></div>
+
+<div class="help-section"><div class="help-h">📝 Notes & offline attachments</div><div class="help-t">Attach to notes: <b>photos</b> (maps to cafes, screenshots), <b>PDF documents</b> (contracts for meetings), <b>audio</b>, <b>links</b>. All files are stored in phone memory and open <b>without internet</b>. Going to a meeting at a cafe? Save the map screenshot and facade photo in advance.</div></div>
+
+<div class="help-section"><div class="help-h">☁️ Cloud sync — detailed</div><div class="help-t"><b>Security:</b> data is encrypted with <b>AES-256 password</b> on your device before being sent to cloud.<br><br><b>Step 1 (first device):</b><br>1. Settings → Cloud sync → 📤 Save<br>2. Set a password<br>3. Get Sync ID — tap to copy<br><br><b>Step 2 (second device):</b><br>1. Settings → 🔗 Connect<br>2. Paste Sync ID<br>3. Enter same password<br>4. 📥 Load<br><br>Service: JSONBin.io, 10,000 requests/month free.</div></div>
+
+<div class="help-section"><div class="help-h">🏷 Tags, themes, languages</div><div class="help-t">Create custom tags with any name and color. All tags including defaults can be deleted. 3 themes: Dark / Light / Emerald. 3 languages: RU / EN / UZ.</div></div>
+`,
+  uz:`
+<div style="background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;padding:18px;border-radius:14px;margin-bottom:14px;text-align:center">
+<div style="font-size:18px;font-weight:700;margin-bottom:8px">🎯 PESKOV Smart Planner</div>
+<div style="font-size:13px;line-height:1.6;opacity:.95">Ishbilarmon odam uchun shaxsiy raqamli yordamchi.<br>Turdaliyev Alisher Rustamovich tomonidan davlat va xususiy sektordagi ko'p yillik tajribaga asoslangan holda yaratilgan.</div></div>
+
+<div class="help-section"><div class="help-h">💡 Bu ilova nima qiladi</div><div class="help-t">PESKOV vazifalar rejalashtiruvchisi, eslatmalar, diktofon, fokus taymeri va bulutli saqlashni bitta joyda birlashtiradi. <b>Internetsiz ishlaydi</b>. Ovozli boshqaruv tezda vazifa yaratishga imkon beradi.</div></div>
+
+<div class="help-section"><div class="help-h">🎙 Ovozli vazifa yaratish</div><div class="help-t">Asosiy sahifada katta <b>+</b> tugmasi va yonida <b>🎙</b> tugmasi. 🎙 ni bosing va aytib bering:<br><br><i>"25-may soat 14:00 da hisobot tayyorlash, shoshilinch, 24-may soat 21:00 ga eslatish"</i><br><br>Ilova nomini, sanasini, vaqtini, muhimligini va eslatmasini ajratib oladi.</div></div>
+
+<div class="help-section"><div class="help-h">☁️ Bulutli sinxronizatsiya</div><div class="help-t">Sozlamalar → Bulutli sinxronizatsiya → 📤 Saqlash → parol o'rnating → Sync ID oling. Boshqa qurilmada: 🔗 Ulanish → Sync ID kiriting → parol → 📥 Yuklab olish.</div></div>
+`
+};
+let helpLang='ru';
+
+function openHelp(){helpLang=lang;renderHelp();document.getElementById('helpOv').classList.add('open');}
+function setHelpLang(l){helpLang=l;['ru','en','uz'].forEach(x=>document.getElementById('hl_'+x).classList.toggle('on',x===l));renderHelp();}
+function renderHelp(){
+  document.getElementById('helpContent').innerHTML=HELP[helpLang]||HELP.ru;
+  ['ru','en','uz'].forEach(x=>document.getElementById('hl_'+x).classList.toggle('on',x===helpLang));
+}
+
+// ===== INIT =====
+function init(){
+  openIDB().catch(()=>console.warn('IDB unavailable, falling back'));
+  load();loadNotes();loadTags();
+  // Apply theme
+  theme=localStorage.getItem('pp_theme')||'dark';
+  setTheme(theme);
+  // Apply lang
+  lang=localStorage.getItem('pp_lang')||'ru';
+  ['ru','en','uz'].forEach(x=>{const b=document.getElementById('lb_'+x);if(b)b.classList.toggle('on',x===lang);});
+  renderDstrip();renderAll();scheduleReminders();
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    navigator.serviceWorker.addEventListener('message',e=>{
+      if(!e.data)return;
+      if(e.data.type==='markDone'&&e.data.taskId){const tk=tasks.find(x=>x.id===e.data.taskId);if(tk&&!tk.done){toggleTask(e.data.taskId);showToast('✅ Выполнено');}}
+      if(e.data.type==='snooze'&&e.data.taskId){const tk=tasks.find(x=>x.id===e.data.taskId);if(tk){const n=new Date();n.setMinutes(n.getMinutes()+10);tk.remind=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');save();scheduleReminders();showToast('💤 +10 мин');}}
+    });
+  }
+  // Check overdue on start (silent)
+  const overdue=tasks.filter(tk=>!tk.done&&tk.status!=='moved'&&tk.date<today()&&tk.date>='2020-01-01');
+  if(overdue.length)setTimeout(()=>showToast(`⚠️ Просрочено: ${overdue.length} задач`),1500);
+}
+document.addEventListener('DOMContentLoaded',init);
+
 </script>
 </body>
 </html>
